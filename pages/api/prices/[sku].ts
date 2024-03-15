@@ -1,20 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { InfluxDB, flux } from '@influxdata/influxdb-client';
-
-type Data = {
-  sku: string;
-  prices: Prices[];
-};
-type Prices = {
-  timestamp: string;
-  price: number;
-};
-
-interface Env {
-  INFLUX_DB_URL: string;
-  INFLUX_DB_TOKEN: string;
-  INFLUX_DB_ORG: string;
-}
+import { SkuResponse, Env, Price } from '../../../types';
 
 const env: Env = {
   INFLUX_DB_URL: process.env.INFLUX_DB_URL || '',
@@ -25,26 +11,29 @@ const env: Env = {
 const url = env.INFLUX_DB_URL;
 const token = env.INFLUX_DB_TOKEN;
 const org = env.INFLUX_DB_ORG;
-const bucket = 'my-bucket';
+const bucket = 'Origo';
 
 export default function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Data>,
+  res: NextApiResponse<SkuResponse>,
 ) {
   const sku = req.query.sku as string;
   const client = new InfluxDB({ url: url, token: token });
   const queryApi = client.getQueryApi(org);
 
-  let prices: Prices[] = [];
+  let prices: Price[] = [];
+  let salePrices: Price[] = [];
 
   const query = flux`from(bucket: "${bucket}") 
     |> range(start: -5y)
-    |> filter(fn: (r) => r._measurement == "priceHistory" and r.sku == "${sku}")`;
+    |> filter(fn: (r) => (r._measurement == "price" or r["_measurement"] == "sale_price") and r.sku == "${sku}")`;
   return new Promise<void>((resolve, reject) => {
     queryApi.queryRows(query, {
       next(row, tableMeta) {
         const o = tableMeta.toObject(row);
-        prices.push({ timestamp: o._time, price: o._value });
+        if (o._measurement === 'price')
+          prices.push({ timestamp: o._time, price: o._value });
+        else salePrices.push({ timestamp: o._time, price: o._value });
       },
       error(error) {
         console.error(error);
@@ -52,7 +41,9 @@ export default function handler(
         reject(error);
       },
       complete() {
-        res.status(200).json({ sku: sku, prices: prices });
+        res
+          .status(200)
+          .json({ sku: sku, prices: prices, salePrices: salePrices });
         resolve();
       },
     });
