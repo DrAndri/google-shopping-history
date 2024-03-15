@@ -49,7 +49,6 @@ export default function Home() {
     }, []);
     const filtered = flattened.filter((key) => key !== 'timestamp');
     const uniqueKeys = [...new Set(filtered)];
-    console.log(uniqueKeys);
     return uniqueKeys.map((key) => {
       return (
         <Line
