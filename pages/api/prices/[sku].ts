@@ -41,6 +41,16 @@ export default function handler(
         reject(error);
       },
       complete() {
+        const lastPrice = prices[prices.length - 1];
+        const lastSalePrice = salePrices[salePrices.length - 1];
+        prices.push({
+          timestamp: new Date().toISOString(),
+          price: lastPrice.price,
+        });
+        salePrices.push({
+          timestamp: new Date().toISOString(),
+          price: lastSalePrice.price,
+        });
         res
           .status(200)
           .json({ sku: sku, prices: prices, salePrices: salePrices });

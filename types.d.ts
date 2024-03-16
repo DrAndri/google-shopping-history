@@ -9,7 +9,7 @@ export type Price = {
 };
 
 export interface RechartFormat {
-  timestamp: string;
+  timestamp: number;
   price?: number;
   salePrice?: number;
 }

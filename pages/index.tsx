@@ -12,32 +12,37 @@ export default function Home() {
       fetch('/api/prices/' + query)
         .then((res) => res.json())
         .then((res: SkuResponse) => {
-          const prices: RechartFormat[] = res.prices.map((price) => {
-            return {
-              price: price.price,
-              timestamp: price.timestamp,
-            };
-          });
-          const salePrices: RechartFormat[] = res.salePrices.map((price) => {
-            return {
-              salePrice: price.price,
-              timestamp: price.timestamp,
-            };
-          });
-          setPrices(prices.concat(salePrices));
+          setPrices(formatPricesForRechart(res));
           setLoading(false);
         });
     } else {
       setPrices([]);
     }
   }, []);
+
+  const formatPricesForRechart = (res: SkuResponse) => {
+    const prices: RechartFormat[] = res.prices.map((price) => {
+      return {
+        price: price.price,
+        timestamp: new Date(price.timestamp).getTime(),
+      };
+    });
+    const salePrices: RechartFormat[] = res.salePrices.map((price) => {
+      return {
+        salePrice: price.price,
+        timestamp: new Date(price.timestamp).getTime(),
+      };
+    });
+    return prices.concat(salePrices);
+  };
+
   const getRandomColor = () => {
     return (
       '#' + ((Math.random() * 0xffffff) << 0).toString(16).padStart(6, '0')
     );
   };
 
-  const lines = () => {
+  const getRechartLines = () => {
     if (!prices) return null;
     const entries = prices.map((option) => {
       const keys = Object.keys(option);
@@ -53,7 +58,7 @@ export default function Home() {
       return (
         <Line
           key={key}
-          type="monotone"
+          type="stepAfter"
           stroke={getRandomColor()}
           dataKey={key}
         />
@@ -74,10 +79,22 @@ export default function Home() {
           data={prices}
           margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
         >
-          <XAxis dataKey="timestamp" />
-          <Tooltip />
+          <XAxis
+            dataKey="timestamp"
+            type="number"
+            domain={['dataMin', 'dataMax']}
+            tickFormatter={(value, index) => {
+              const date = new Date(value);
+              return date.toLocaleDateString('is-IS', {
+                // you can use undefined as first argument
+                year: 'numeric',
+                month: '2-digit',
+              });
+            }}
+          />
+          <Tooltip labelFormatter={(t) => new Date(t).toLocaleString()} />
           <CartesianGrid stroke="#f5f5f5" />
-          {lines()}
+          {getRechartLines()}
         </LineChart>
       )}
     </div>
