@@ -10,6 +10,7 @@ import {
 import PriceChart from '../components/PriceChart/PriceChart';
 import { Flex, Layout } from 'antd';
 import SkuSelector from '../components/SkuSelector/SkuSelector';
+import dayjs from 'dayjs';
 
 const { Header, Content } = Layout;
 
@@ -64,14 +65,14 @@ export default function Home() {
       const key = price.sku + ' - price';
       return {
         [key]: price.price,
-        timestamp: new Date(price.timestamp).getTime(),
+        timestamp: dayjs(price.timestamp).unix(),
       };
     });
     const salePrices: RechartFormat[] = res.salePrices.map((price) => {
       const key = price.sku + ' - salePrice';
       return {
         [key]: price.price,
-        timestamp: new Date(price.timestamp).getTime(),
+        timestamp: dayjs(price.timestamp).unix(),
       };
     });
     return prices.concat(salePrices);

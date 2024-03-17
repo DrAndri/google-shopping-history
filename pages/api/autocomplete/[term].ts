@@ -24,11 +24,10 @@ export default function handler(
   let terms: string[] = [];
 
   const query =
-    ' \
-  from(bucket: "' +
+    'from(bucket: "' +
     bucket +
     '") \
-  |> range(start: -30d, stop: now()) \
+  |> range(start: -5y) \
   |> filter(fn: (r) => (r["_measurement"] == "price" or r["_measurement"] == "sale_price") and (r["_field"] == "amount")) \
   |> keep(columns: ["sku"]) \
   |> group() \

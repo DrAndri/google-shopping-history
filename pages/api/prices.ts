@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { InfluxDB } from '@influxdata/influxdb-client';
 import { PricesResponse, Env, Price, PricesRequest } from '../../types';
+import dayjs from 'dayjs';
 
 const env: Env = {
   INFLUX_DB_URL: process.env.INFLUX_DB_URL || '',
@@ -73,11 +74,11 @@ export default function handler(
       complete() {
         if (prices.length > 0 || salePrices.length > 0) {
           Object.keys(lastPrices).forEach((key: string) => {
-            lastPrices[key].timestamp = new Date().toISOString();
+            lastPrices[key].timestamp = dayjs().toISOString();
             prices.push(lastPrices[key]);
           });
           Object.keys(lastSalePrices).forEach((key: string) => {
-            lastSalePrices[key].timestamp = new Date().toISOString();
+            lastSalePrices[key].timestamp = dayjs().toISOString();
             salePrices.push(lastSalePrices[key]);
           });
           res.status(200).json({ prices: prices, salePrices: salePrices });

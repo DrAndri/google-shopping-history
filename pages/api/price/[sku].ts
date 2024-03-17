@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { InfluxDB } from '@influxdata/influxdb-client';
 import { PriceResponse, Env, Price } from '../../../types';
+import dayjs from 'dayjs';
 
 const env: Env = {
   INFLUX_DB_URL: process.env.INFLUX_DB_URL || '',
@@ -51,13 +52,13 @@ export default function handler(
           const lastSalePrice = salePrices[salePrices.length - 1];
           if (lastPrice) {
             prices.push({
-              timestamp: new Date().toISOString(),
+              timestamp: dayjs().toISOString(),
               price: lastPrice.price,
             });
           }
           if (lastSalePrice) {
             salePrices.push({
-              timestamp: new Date().toISOString(),
+              timestamp: dayjs().toISOString(),
               price: lastSalePrice.price,
             });
           }
