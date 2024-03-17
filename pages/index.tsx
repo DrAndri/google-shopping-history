@@ -1,17 +1,33 @@
-import { useCallback, useState } from 'react';
-import { LineChart, Line, XAxis, Tooltip, CartesianGrid } from 'recharts';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import styles from '../styles/Home.module.css';
-import { RechartFormat, SkuResponse } from '../types';
+import {
+  RechartFormat,
+  PriceResponse,
+  PricesResponse,
+  AutocompleteResponse,
+  SelectValue,
+} from '../types';
+import PriceChart from '../components/PriceChart/PriceChart';
+import { Flex, Layout } from 'antd';
+import SkuSelector from '../components/SkuSelector/SkuSelector';
+
+const { Header, Content } = Layout;
 
 export default function Home() {
+  const mainLayoutRef = useRef<HTMLElement | null>(null);
   const [prices, setPrices] = useState<RechartFormat[]>();
   const [loading, setLoading] = useState(false);
+  const [mainLayoutDimensions, setMainLayoutDimensions] = useState<{
+    offsetWidth: number;
+    offsetHeight: number;
+  }>({ offsetHeight: 0, offsetWidth: 0 });
+  const [selectedSkus, setSelectedSkus] = useState<SelectValue[]>([]);
   const onChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value;
-    if (query.length) {
-      fetch('/api/prices/' + query)
+    if (query.length > 0) {
+      fetch('/api/price/' + query)
         .then((res) => res.json())
-        .then((res: SkuResponse) => {
+        .then((res: PriceResponse) => {
           setPrices(formatPricesForRechart(res));
           setLoading(false);
         });
@@ -20,83 +36,99 @@ export default function Home() {
     }
   }, []);
 
-  const formatPricesForRechart = (res: SkuResponse) => {
+  useEffect(() => {
+    const filtered = selectedSkus.map((sku) => sku.value);
+    fetch('/api/prices', {
+      method: 'POST',
+      body: JSON.stringify({ skus: filtered }),
+    })
+      .then((res) => res.json())
+      .then((res: PricesResponse) => {
+        setPrices(formatPricesForRechart(res));
+        setLoading(false);
+      });
+  }, [selectedSkus]);
+
+  useEffect(() => {
+    const offsetWidth = mainLayoutRef.current
+      ? mainLayoutRef.current.offsetWidth
+      : 0;
+    const offsetHeight = mainLayoutRef.current
+      ? mainLayoutRef.current.offsetHeight
+      : 0;
+    setMainLayoutDimensions({ offsetWidth, offsetHeight });
+  }, []);
+
+  const formatPricesForRechart = (res: PriceResponse | PricesResponse) => {
     const prices: RechartFormat[] = res.prices.map((price) => {
+      const key = price.sku + ' - price';
       return {
-        price: price.price,
+        [key]: price.price,
         timestamp: new Date(price.timestamp).getTime(),
       };
     });
     const salePrices: RechartFormat[] = res.salePrices.map((price) => {
+      const key = price.sku + ' - salePrice';
       return {
-        salePrice: price.price,
+        [key]: price.price,
         timestamp: new Date(price.timestamp).getTime(),
       };
     });
     return prices.concat(salePrices);
   };
 
-  const getRandomColor = () => {
-    return (
-      '#' + ((Math.random() * 0xffffff) << 0).toString(16).padStart(6, '0')
-    );
-  };
+  async function searchForSkusBeginningWith(
+    term: string,
+  ): Promise<SelectValue[]> {
+    return fetch('/api/autocomplete/' + term)
+      .then((res) => res.json())
+      .then((res: AutocompleteResponse) => {
+        console.log(res);
 
-  const getRechartLines = () => {
-    if (!prices) return null;
-    const entries = prices.map((option) => {
-      const keys = Object.keys(option);
-      return keys;
-    });
-    const flattened = entries.reduce((prev, current) => {
-      prev = prev.concat(current);
-      return prev;
-    }, []);
-    const filtered = flattened.filter((key) => key !== 'timestamp');
-    const uniqueKeys = [...new Set(filtered)];
-    return uniqueKeys.map((key) => {
-      return (
-        <Line
-          key={key}
-          type="stepAfter"
-          stroke={getRandomColor()}
-          dataKey={key}
-        />
-      );
-    });
-  };
+        return res.terms.map((term: string) => ({
+          label: term,
+          value: term,
+        }));
+      });
+  }
 
   if (loading) {
     return <div>loading...</div>;
   }
   return (
     <div className={styles.container}>
-      <input onChange={onChange} />
-      {prices && prices.length > 0 && (
-        <LineChart
-          width={400}
-          height={400}
-          data={prices}
-          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-        >
-          <XAxis
-            dataKey="timestamp"
-            type="number"
-            domain={['dataMin', 'dataMax']}
-            tickFormatter={(value, index) => {
-              const date = new Date(value);
-              return date.toLocaleDateString('is-IS', {
-                // you can use undefined as first argument
-                year: 'numeric',
-                month: '2-digit',
-              });
+      <Layout style={{ height: '100vh' }}>
+        <Header>
+          <SkuSelector
+            mode="multiple"
+            value={selectedSkus}
+            placeholder="Leitaðu að vörunúmeri..."
+            fetchOptions={searchForSkusBeginningWith}
+            onChange={(newValue) => {
+              setSelectedSkus(newValue as SelectValue[]);
             }}
+            style={{ width: '100%' }}
           />
-          <Tooltip labelFormatter={(t) => new Date(t).toLocaleString()} />
-          <CartesianGrid stroke="#f5f5f5" />
-          {getRechartLines()}
-        </LineChart>
-      )}
+          <input onChange={onChange} />
+        </Header>
+        <Layout style={{ height: '100vh' }} ref={mainLayoutRef}>
+          <Content>
+            <Flex
+              justify="space-around"
+              align="center"
+              style={{ height: '100%' }}
+            >
+              {prices && prices.length > 0 && (
+                <PriceChart
+                  prices={prices}
+                  width={mainLayoutDimensions.offsetWidth - 50}
+                  height={mainLayoutDimensions.offsetHeight - 50}
+                />
+              )}
+            </Flex>
+          </Content>
+        </Layout>
+      </Layout>
     </div>
   );
 }
