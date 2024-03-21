@@ -1,4 +1,12 @@
-import { CartesianGrid, Line, LineChart, Tooltip, XAxis } from 'recharts';
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { PriceChartProps } from '../../types';
 import dayjs from 'dayjs';
 
@@ -45,12 +53,7 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
     while (next.isBefore(highest)) {
       timestamps.push(next.unix());
       next = next.add(1, 'month');
-      console.log(next);
-      console.log(highest);
     }
-    console.log(lowestTimestamp);
-    console.log(highestTimestamp);
-    console.log(timestamps);
     return timestamps;
   };
 
@@ -72,15 +75,20 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
         type="number"
         domain={lowestAndHighestOfTimestamps()}
         ticks={everyMonthInRange()}
-        interval={0}
-        // tickCount={10}
         tickFormatter={(value) => {
           const date = dayjs.unix(value);
           return date.format('MM/YY');
         }}
       />
+      <YAxis
+        width={90}
+        tickFormatter={(value) =>
+          value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr.'
+        }
+      />
       <Tooltip labelFormatter={(t) => dayjs.unix(t).toLocaleString()} />
-      <CartesianGrid stroke="#f5f5f5" />
+      <CartesianGrid stroke="#c2c2c2" strokeDasharray="3 3" />
+      <Legend />
       {getRechartLines()}
     </LineChart>
   );
