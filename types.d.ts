@@ -1,3 +1,5 @@
+import { Document } from 'mongodb';
+
 export interface PriceResponse {
   sku: string;
   prices: Price[];
@@ -17,7 +19,7 @@ export interface PricesResponse {
 }
 
 export interface Price {
-  timestamp: string;
+  timestamp: number;
   price: number;
   sku?: string;
 }
@@ -29,9 +31,7 @@ export interface RechartFormat {
 }
 
 export interface Env {
-  INFLUX_DB_URL: string;
-  INFLUX_DB_TOKEN: string;
-  INFLUX_DB_ORG: string;
+  MONGODB_URI: string;
 }
 export interface PriceChartProps {
   prices: RechartFormat[];
@@ -43,4 +43,22 @@ export interface SelectValue {
   key?: string | undefined;
   label: ReactNode;
   value: string | number;
+}
+
+export interface MongodbDocument extends Document {
+  sku: string;
+  store: string;
+}
+
+export interface MongodbProductInfo extends MongodbDocument {
+  sku: string;
+  salePriceLastSeen: number | undefined;
+  lastSeen: number;
+}
+
+export interface MongodbProductPrice extends MongodbDocument {
+  sku: string;
+  sale_price: boolean;
+  price: number;
+  timestamp: number;
 }

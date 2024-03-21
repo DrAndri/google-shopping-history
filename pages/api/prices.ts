@@ -1,18 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { InfluxDB } from '@influxdata/influxdb-client';
-import { PricesResponse, Env, Price, PricesRequest } from '../../types';
-import dayjs from 'dayjs';
+import { MongoClient } from 'mongodb';
+import {
+  PricesResponse,
+  Env,
+  Price,
+  PricesRequest,
+  MongodbProductPrice,
+  MongodbProductInfo,
+} from '../../types';
 
 const env: Env = {
-  INFLUX_DB_URL: process.env.INFLUX_DB_URL || '',
-  INFLUX_DB_TOKEN: process.env.INFLUX_DB_TOKEN || '',
-  INFLUX_DB_ORG: process.env.INFLUX_DB_ORG || '',
+  MONGODB_URI: process.env.MONGODB_URI || '',
 };
 
-const url = env.INFLUX_DB_URL;
-const token = env.INFLUX_DB_TOKEN;
-const org = env.INFLUX_DB_ORG;
-const bucket = 'Origo';
+const MONGODB_URI = env.MONGODB_URI;
+const storeName = 'Origo';
 
 export default function handler(
   req: NextApiRequest,
@@ -24,8 +26,8 @@ export default function handler(
     res.status(400);
     return;
   }
-  const client = new InfluxDB({ url: url, token: token });
-  const queryApi = client.getQueryApi(org);
+  const mongoClient = new MongoClient(MONGODB_URI);
+  mongoClient.connect();
 
   let prices: Price[] = [];
   let salePrices: Price[] = [];
@@ -33,60 +35,45 @@ export default function handler(
   let lastPrices: { [key: string]: Price } = {};
   let lastSalePrices: { [key: string]: Price } = {};
 
-  const getInfluxQuery = (querySkus: string[]) => {
-    let query = '(';
-    for (let i = 0; i < querySkus.length; i++) {
-      const sku = querySkus[i];
-      if (i == 0) query += 'r.sku == "';
-      else query += ' or r.sku == "';
-      query += encodeURIComponent(sku) + '"';
+  return new Promise<void>(async (resolve, reject) => {
+    const priceChanges = mongoClient
+      .db('google-shopping-scraper')
+      .collection<MongodbProductPrice>('priceChanges')
+      .find({ sku: { $in: skus }, store: storeName });
+    for await (const doc of priceChanges) {
+      const entry = {
+        sku: doc.sku,
+        timestamp: doc.timestamp,
+        price: doc.price,
+      };
+      if (doc.sale_price) {
+        salePrices.push(entry);
+        lastSalePrices[entry.sku] = { ...entry };
+      } else {
+        prices.push(entry);
+        lastPrices[entry.sku] = { ...entry };
+      }
     }
-    query += ')';
-    return query;
-  };
 
-  const query =
-    'from(bucket: "' +
-    bucket +
-    '") \
-    |> range(start: -5y) \
-    |> filter(fn: (r) => (r._measurement == "price" or r["_measurement"] == "sale_price") and ' +
-    getInfluxQuery(skus) +
-    ')';
-  return new Promise<void>((resolve, reject) => {
-    queryApi.queryRows(query, {
-      next(row, tableMeta) {
-        const o = tableMeta.toObject(row);
-        const entry = { timestamp: o._time, price: o._value, sku: o.sku };
-        if (o._measurement === 'price') {
-          lastPrices[o.sku] = { ...entry };
-          prices.push(entry);
-        } else {
-          lastSalePrices[o.sku] = { ...entry };
-          salePrices.push(entry);
-        }
-      },
-      error(error) {
-        console.error(error);
-        res.status(400);
-        reject(error);
-      },
-      complete() {
-        if (prices.length > 0 || salePrices.length > 0) {
-          Object.keys(lastPrices).forEach((key: string) => {
-            lastPrices[key].timestamp = dayjs().toISOString();
-            prices.push(lastPrices[key]);
-          });
-          Object.keys(lastSalePrices).forEach((key: string) => {
-            lastSalePrices[key].timestamp = dayjs().toISOString();
-            salePrices.push(lastSalePrices[key]);
-          });
-          res.status(200).json({ prices: prices, salePrices: salePrices });
-        } else {
-          res.status(404).json({ prices: prices, salePrices: salePrices });
-        }
-        resolve();
-      },
-    });
+    const productInfos = mongoClient
+      .db('google-shopping-scraper')
+      .collection<MongodbProductInfo>('productInfo')
+      .find({ sku: { $in: skus }, store: storeName });
+    for await (const doc of productInfos) {
+      prices.push({
+        timestamp: doc.lastSeen,
+        sku: doc.sku,
+        price: lastPrices[doc.sku].price,
+      });
+      if (doc.salePriceLastSeen)
+        prices.push({
+          timestamp: doc.salePriceLastSeen,
+          sku: doc.sku,
+          price: lastSalePrices[doc.sku].price,
+        });
+    }
+    res.status(200).json({ prices: prices, salePrices: salePrices });
+    res.status(404).json({ prices: prices, salePrices: salePrices });
+    resolve();
   });
 }
