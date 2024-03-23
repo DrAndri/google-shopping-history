@@ -1,41 +1,26 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { MongoClient } from 'mongodb';
 import {
   PricesResponse,
-  Env,
   Price,
-  PricesRequest,
   MongodbProductPrice,
-  MongodbProductInfo,
+  MongodbProductMetadata,
+  PriceArray,
 } from '../../types';
+import getMongoClient from '../../utils/mongodb';
 
-const env: Env = {
-  MONGODB_URI: process.env.MONGODB_URI || '',
-};
-
-const MONGODB_URI = env.MONGODB_URI;
 const storeName = 'Origo';
 
 export default function handler(
   req: NextApiRequest,
   res: NextApiResponse<PricesResponse>,
 ) {
-  const body = JSON.parse(req.body);
-  const skus = body.skus;
-  if (!skus || skus.length == 0) {
-    res.status(400);
-    return;
-  }
-  const mongoClient = new MongoClient(MONGODB_URI);
-  mongoClient.connect();
+  const mongoClient = getMongoClient();
+  const lastPrices: PriceArray = {};
+  const lastSalePrices: PriceArray = {};
 
-  let prices: Price[] = [];
-  let salePrices: Price[] = [];
-
-  let lastPrices: { [key: string]: Price } = {};
-  let lastSalePrices: { [key: string]: Price } = {};
-
-  return new Promise<void>(async (resolve, reject) => {
+  const getPriceChanges = async (skus: string[]) => {
+    const prices: Price[] = [];
+    const salePrices: Price[] = [];
     const priceChanges = mongoClient
       .db('google-shopping-scraper')
       .collection<MongodbProductPrice>('priceChanges')
@@ -54,26 +39,60 @@ export default function handler(
         lastPrices[entry.sku] = { ...entry };
       }
     }
+    const result: PricesResponse = { prices, salePrices };
+    return result;
+  };
 
-    const productInfos = mongoClient
+  const addLatestPoint = async (skus: string[], result: PricesResponse) => {
+    const { prices } = result;
+    const productMetadata = mongoClient
       .db('google-shopping-scraper')
-      .collection<MongodbProductInfo>('productInfo')
+      .collection<MongodbProductMetadata>('productMetadata')
       .find({ sku: { $in: skus }, store: storeName });
-    for await (const doc of productInfos) {
-      prices.push({
-        timestamp: doc.lastSeen,
-        sku: doc.sku,
-        price: lastPrices[doc.sku].price,
-      });
-      if (doc.salePriceLastSeen)
+    for await (const doc of productMetadata) {
+      if (doc.lastSeen !== lastPrices[doc.sku].timestamp) {
+        prices.push({
+          timestamp: doc.lastSeen,
+          sku: doc.sku,
+          price: lastPrices[doc.sku].price,
+        });
+      }
+      if (
+        doc.salePriceLastSeen &&
+        doc.salePriceLastSeen !== lastSalePrices[doc.sku].timestamp
+      ) {
         prices.push({
           timestamp: doc.salePriceLastSeen,
           sku: doc.sku,
           price: lastSalePrices[doc.sku].price,
         });
+      }
     }
-    res.status(200).json({ prices: prices, salePrices: salePrices });
-    res.status(404).json({ prices: prices, salePrices: salePrices });
-    resolve();
+    return result;
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+  const skus: string[] = JSON.parse(req.body)?.skus;
+
+  return new Promise<void>((resolve, reject) => {
+    if (!skus || skus.length == 0) {
+      res.status(200);
+      resolve();
+    } else {
+      getPriceChanges(skus)
+        .then((result) => addLatestPoint(skus, result))
+        .then(({ prices, salePrices }) => {
+          if (prices.length > 0 || salePrices.length > 0) {
+            res.status(200).json({ prices: prices, salePrices: salePrices });
+          } else {
+            res.status(404).json({ prices: prices, salePrices: salePrices });
+          }
+          resolve();
+        })
+        .catch((error) => {
+          console.log(error);
+          reject(error);
+        });
+    }
   });
 }

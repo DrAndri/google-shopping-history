@@ -44,7 +44,7 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
   const everyMonthInRange = () => {
     const lowestTimestamp = prices[0].timestamp;
     const highestTimestamp = prices[prices.length - 1].timestamp;
-    let timestamps = [];
+    const timestamps = [];
     const lowest = dayjs.unix(lowestTimestamp);
     const highest = dayjs.unix(highestTimestamp);
     const firstOfLowest = lowest.startOf('month').unix();
@@ -75,18 +75,18 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
         type="number"
         domain={lowestAndHighestOfTimestamps()}
         ticks={everyMonthInRange()}
-        tickFormatter={(value) => {
+        tickFormatter={(value: number) => {
           const date = dayjs.unix(value);
           return date.format('MM/YY');
         }}
       />
       <YAxis
         width={90}
-        tickFormatter={(value) =>
+        tickFormatter={(value: number) =>
           value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr.'
         }
       />
-      <Tooltip labelFormatter={(t) => dayjs.unix(t).toLocaleString()} />
+      <Tooltip labelFormatter={(t: number) => dayjs.unix(t).toLocaleString()} />
       <CartesianGrid stroke="#c2c2c2" strokeDasharray="3 3" />
       <Legend />
       {getRechartLines()}

@@ -4,7 +4,7 @@ import type { SelectProps } from 'antd';
 import debounce from 'lodash/debounce';
 import { SelectValue } from '../../types';
 
-export interface DebounceSelectProps<ValueType = any>
+export interface DebounceSelectProps<ValueType>
   extends Omit<SelectProps<ValueType | ValueType[]>, 'options' | 'children'> {
   fetchOptions: (term: string) => Promise<SelectValue[]>;
   debounceTimeout?: number;
@@ -15,7 +15,7 @@ export default function SkuSelector<
     key?: string;
     label: React.ReactNode;
     value: string | number;
-  } = any,
+  },
 >({
   fetchOptions,
   debounceTimeout = 800,
@@ -32,15 +32,17 @@ export default function SkuSelector<
       setOptions([]);
       setFetching(true);
 
-      fetchOptions(value).then((newOptions) => {
-        if (fetchId !== fetchRef.current) {
-          // for fetch callback order
-          return;
-        }
+      fetchOptions(value)
+        .then((newOptions) => {
+          if (fetchId !== fetchRef.current) {
+            // for fetch callback order
+            return;
+          }
 
-        setOptions(newOptions);
-        setFetching(false);
-      });
+          setOptions(newOptions);
+          setFetching(false);
+        })
+        .catch((error) => console.log(error));
     };
 
     return debounce(loadOptions, debounceTimeout);
@@ -57,44 +59,3 @@ export default function SkuSelector<
     />
   );
 }
-
-// Usage of DebounceSelect
-interface UserValue {
-  label: string;
-  value: string;
-}
-
-async function fetchUserList(username: string): Promise<UserValue[]> {
-  console.log('fetching user', username);
-
-  return fetch('https://randomuser.me/api/?results=5')
-    .then((response) => response.json())
-    .then((body) =>
-      body.results.map(
-        (user: {
-          name: { first: string; last: string };
-          login: { username: string };
-        }) => ({
-          label: `${user.name.first} ${user.name.last}`,
-          value: user.login.username,
-        }),
-      ),
-    );
-}
-
-const App: React.FC = () => {
-  const [value, setValue] = useState<UserValue[]>([]);
-
-  return (
-    <SkuSelector
-      mode="multiple"
-      value={value}
-      placeholder="Select users"
-      fetchOptions={fetchUserList}
-      onChange={(newValue) => {
-        setValue(newValue as UserValue[]);
-      }}
-      style={{ width: '100%' }}
-    />
-  );
-};

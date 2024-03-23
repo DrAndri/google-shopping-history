@@ -23,6 +23,7 @@ export interface Price {
   price: number;
   sku?: string;
 }
+type PriceArray = Record<string, Price>;
 
 export interface RechartFormat {
   timestamp: number;
@@ -30,9 +31,6 @@ export interface RechartFormat {
   salePrice?: number;
 }
 
-export interface Env {
-  MONGODB_URI: string;
-}
 export interface PriceChartProps {
   prices: RechartFormat[];
   width: number;
@@ -50,7 +48,7 @@ export interface MongodbDocument extends Document {
   store: string;
 }
 
-export interface MongodbProductInfo extends MongodbDocument {
+export interface MongodbProductMetadata extends MongodbDocument {
   sku: string;
   salePriceLastSeen: number | undefined;
   lastSeen: number;

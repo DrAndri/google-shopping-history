@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from '../styles/Home.module.css';
 import {
   RechartFormat,
@@ -23,19 +23,6 @@ export default function Home() {
     offsetHeight: number;
   }>({ offsetHeight: 0, offsetWidth: 0 });
   const [selectedSkus, setSelectedSkus] = useState<SelectValue[]>([]);
-  const onChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const query = event.target.value;
-    if (query.length > 0) {
-      fetch('/api/price/' + query)
-        .then((res) => res.json())
-        .then((res: PriceResponse) => {
-          setPrices(formatPricesForRechart(res));
-          setLoading(false);
-        });
-    } else {
-      setPrices([]);
-    }
-  }, []);
 
   useEffect(() => {
     const filtered = selectedSkus.map((sku) => sku.value);
@@ -47,7 +34,8 @@ export default function Home() {
       .then((res: PricesResponse) => {
         setPrices(formatPricesForRechart(res));
         setLoading(false);
-      });
+      })
+      .catch((error) => console.log(error));
   }, [selectedSkus]);
 
   useEffect(() => {
@@ -110,7 +98,6 @@ export default function Home() {
             }}
             style={{ width: '100%' }}
           />
-          <input onChange={onChange} />
         </Header>
         <Layout style={{ height: '100vh' }} ref={mainLayoutRef}>
           <Content>
