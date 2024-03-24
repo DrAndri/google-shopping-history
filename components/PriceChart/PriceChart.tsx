@@ -29,6 +29,7 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
     }, []);
     const filtered = flattened.filter((key) => key !== 'timestamp');
     const uniqueKeys = [...new Set(filtered)];
+    console.log(uniqueKeys)
     return uniqueKeys.map((key) => {
       return (
         <Line
