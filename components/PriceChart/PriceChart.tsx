@@ -18,6 +18,7 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
   };
 
   const getRechartLines = () => {
+    console.log(prices)
     if (!prices) return null;
     const entries = prices.map((option) => {
       const keys = Object.keys(option);
