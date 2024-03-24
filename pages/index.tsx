@@ -61,7 +61,7 @@ export default function Home() {
         timestamp: price.timestamp,
       };
     });
-    return prices.concat(salePrices);
+    return prices.concat(...salePrices);
   };
 
   async function searchForSkusBeginningWith(
