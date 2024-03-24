@@ -75,7 +75,7 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
         type="number"
         domain={lowestAndHighestOfTimestamps()}
         ticks={everyMonthInRange()}
-        allowDuplicatedCategory={false}
+        
         tickFormatter={(value: number) => {
           const date = dayjs.unix(value);
           return date.format('MM/YY');
@@ -83,6 +83,7 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
       />
       <YAxis
         width={90}
+        allowDuplicatedCategory={false}
         tickFormatter={(value: number) =>
           value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr.'
         }
