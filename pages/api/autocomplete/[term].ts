@@ -16,7 +16,11 @@ export default function handler(
     const productMetadata = mongoClient
       .db('google-shopping-scraper')
       .collection<MongodbProductMetadata>('productMetadata')
-      .find({ sku: { $regex: new RegExp(`^${term}`) }, store: storeName });
+      .find({ sku: { $regex: new RegExp(`^${term}`) }, store: storeName }, {
+        projection: {
+          sku: 1,
+        },
+      },);
     for await (const doc of productMetadata) {
       terms.push(doc.sku);
     }

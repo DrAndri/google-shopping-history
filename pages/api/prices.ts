@@ -49,7 +49,17 @@ export default function handler(
     const productMetadata = mongoClient
       .db('google-shopping-scraper')
       .collection<MongodbProductMetadata>('productMetadata')
-      .find({ sku: { $in: skus }, store: storeName });
+      .find(
+        { sku: { $in: skus }, store: storeName },
+        {
+          projection: {
+            sku: 1,
+            timestamp: 1,
+            lastSeen: 1,
+            salePriceLastSeen: 1,
+          },
+        },
+      );
     for await (const doc of productMetadata) {
       if (doc.lastSeen !== lastPrices[doc.sku].timestamp) {
         prices.push({
