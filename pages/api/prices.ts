@@ -78,6 +78,8 @@ export default function handler(
           price: lastSalePrices[doc.sku].price,
         });
       }
+      prices.sort((a, b) => a.sku.localeCompare(b.sku));
+      salePrices.sort((a, b) => a.sku.localeCompare(b.sku));
     }
     return result;
   };

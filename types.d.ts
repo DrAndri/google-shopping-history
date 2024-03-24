@@ -15,7 +15,7 @@ export interface PricesResponse {
 export interface Price {
   timestamp: number;
   price: number;
-  sku?: string;
+  sku: string;
 }
 type PriceArray = Record<string, Price>;
 
