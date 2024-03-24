@@ -1,10 +1,4 @@
 import { Document } from 'mongodb';
-
-export interface PriceResponse {
-  sku: string;
-  prices: Price[];
-  salePrices: Price[];
-}
 export interface AutocompleteResponse {
   terms: string[];
 }

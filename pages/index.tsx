@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import styles from '../styles/Home.module.css';
 import {
   RechartFormat,
-  PriceResponse,
   PricesResponse,
   AutocompleteResponse,
   SelectValue,
@@ -10,7 +9,6 @@ import {
 import PriceChart from '../components/PriceChart/PriceChart';
 import { Flex, Layout } from 'antd';
 import SkuSelector from '../components/SkuSelector/SkuSelector';
-import dayjs from 'dayjs';
 
 const { Header, Content } = Layout;
 
@@ -48,19 +46,19 @@ export default function Home() {
     setMainLayoutDimensions({ offsetWidth, offsetHeight });
   }, []);
 
-  const formatPricesForRechart = (res: PriceResponse | PricesResponse) => {
+  const formatPricesForRechart = (res: PricesResponse) => {
     const prices: RechartFormat[] = res.prices.map((price) => {
       const key = price.sku + ' - price';
       return {
         [key]: price.price,
-        timestamp: dayjs(price.timestamp).unix(),
+        timestamp: price.timestamp,
       };
     });
     const salePrices: RechartFormat[] = res.salePrices.map((price) => {
       const key = price.sku + ' - salePrice';
       return {
         [key]: price.price,
-        timestamp: dayjs(price.timestamp).unix(),
+        timestamp: price.timestamp,
       };
     });
     return prices.concat(salePrices);
