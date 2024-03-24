@@ -70,8 +70,6 @@ export default function Home() {
     return fetch('/api/autocomplete/' + term)
       .then((res) => res.json())
       .then((res: AutocompleteResponse) => {
-        console.log(res);
-
         return res.terms.map((term: string) => ({
           label: term,
           value: term,

@@ -18,7 +18,6 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
   };
 
   const getRechartLines = () => {
-    console.log(prices)
     if (!prices) return null;
     const entries = prices.map((option) => {
       const keys = Object.keys(option);
@@ -30,7 +29,6 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
     }, []);
     const filtered = flattened.filter((key) => key !== 'timestamp');
     const uniqueKeys = [...new Set(filtered)];
-    console.log(uniqueKeys)
     return uniqueKeys.map((key) => {
       return (
         <Line
@@ -77,6 +75,7 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
         type="number"
         domain={lowestAndHighestOfTimestamps()}
         ticks={everyMonthInRange()}
+        allowDuplicatedCategory={false}
         tickFormatter={(value: number) => {
           const date = dayjs.unix(value);
           return date.format('MM/YY');
