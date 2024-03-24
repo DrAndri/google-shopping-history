@@ -45,7 +45,7 @@ export default function handler(
   };
 
   const addLatestPoint = async (skus: string[], result: PricesResponse) => {
-    const { prices } = result;
+    const { prices, salePrices } = result;
     const productMetadata = mongoClient
       .db('google-shopping-scraper')
       .collection<MongodbProductMetadata>('productMetadata')
@@ -72,7 +72,7 @@ export default function handler(
         doc.salePriceLastSeen &&
         doc.salePriceLastSeen !== lastSalePrices[doc.sku].timestamp
       ) {
-        prices.push({
+        salePrices.push({
           sku: doc.sku,
           timestamp: doc.salePriceLastSeen,
           price: lastSalePrices[doc.sku].price,
