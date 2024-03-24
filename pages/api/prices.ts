@@ -24,7 +24,8 @@ export default function handler(
     const priceChanges = mongoClient
       .db('google-shopping-scraper')
       .collection<MongodbProductPrice>('priceChanges')
-      .find({ sku: { $in: skus }, store: storeName });
+      .find({ sku: { $in: skus }, store: storeName })
+      .sort({ timestamp: 1 });
     for await (const doc of priceChanges) {
       const entry = {
         sku: doc.sku,
@@ -52,8 +53,8 @@ export default function handler(
     for await (const doc of productMetadata) {
       if (doc.lastSeen !== lastPrices[doc.sku].timestamp) {
         prices.push({
-          timestamp: doc.lastSeen,
           sku: doc.sku,
+          timestamp: doc.lastSeen,
           price: lastPrices[doc.sku].price,
         });
       }
@@ -62,8 +63,8 @@ export default function handler(
         doc.salePriceLastSeen !== lastSalePrices[doc.sku].timestamp
       ) {
         prices.push({
-          timestamp: doc.salePriceLastSeen,
           sku: doc.sku,
+          timestamp: doc.salePriceLastSeen,
           price: lastSalePrices[doc.sku].price,
         });
       }

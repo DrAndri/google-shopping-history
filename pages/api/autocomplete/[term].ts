@@ -13,11 +13,11 @@ export default function handler(
 
   const getTerms = async () => {
     const terms: string[] = [];
-    const priceChanges = mongoClient
+    const productMetadata = mongoClient
       .db('google-shopping-scraper')
       .collection<MongodbProductMetadata>('productMetadata')
       .find({ sku: { $regex: new RegExp(`^${term}`) }, store: storeName });
-    for await (const doc of priceChanges) {
+    for await (const doc of productMetadata) {
       terms.push(doc.sku);
     }
     return terms;
