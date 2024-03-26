@@ -31,7 +31,6 @@ export async function getServerSideProps() {
 export default function Home({
   stores,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  console.log(stores);
   const mainLayoutRef = useRef<HTMLElement | null>(null);
   const [prices, setPrices] = useState<RechartFormat[]>();
   const [loading, setLoading] = useState(false);
@@ -40,7 +39,7 @@ export default function Home({
     offsetHeight: number;
   }>({ offsetHeight: 0, offsetWidth: 0 });
   const [selectedSkus, setSelectedSkus] = useState<SelectValue[]>([]);
-  const [selectedStores, setSelectedStores] = useState<string[]>([]);
+  const [selectedStores, setSelectedStores] = useState<string[]>(['Origo']);
 
   useEffect(() => {
     const filtered = selectedSkus.map((sku) => sku.value);

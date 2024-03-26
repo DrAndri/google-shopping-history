@@ -16,11 +16,13 @@ export default function handler(
 
   const getTerms = async () => {
     const terms: string[] = [];
+    console.log(term);
+    console.log(stores);
     const productMetadata = mongoClient
       .db('google-shopping-scraper')
       .collection<MongodbProductMetadata>('productMetadata')
       .find(
-        { sku: { $regex: new RegExp(`^${term}`) }, store: stores },
+        { sku: { $regex: new RegExp(`^${term}`) }, store: { $in: stores } },
         {
           projection: {
             _id: 0,
