@@ -132,7 +132,7 @@ export default function Home({
             onChange={(newValue) => {
               setSelectedSkus(newValue as SelectValue[]);
             }}
-            style={{ width: '80%' }}
+            style={{ width: '89%' }}
           />
           <Select
             mode="multiple"
