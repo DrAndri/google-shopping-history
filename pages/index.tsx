@@ -104,6 +104,7 @@ export default function Home({
       .then((res) => res.json())
       .then((res: AutocompleteResponse) => {
         return res.terms.map((term: string) => ({
+          key: term,
           label: term,
           value: term,
         }));

@@ -5,22 +5,16 @@ import debounce from 'lodash/debounce';
 import { SelectValue } from '../../types';
 
 export interface DebounceSelectProps<ValueType>
-  extends Omit<SelectProps<ValueType | ValueType[]>, 'options' | 'children'> {
+  extends Omit<SelectProps<ValueType | SelectValue[]>, 'options' | 'children'> {
   fetchOptions: (term: string) => Promise<SelectValue[]>;
   debounceTimeout?: number;
 }
 
-export default function SkuSelector<
-  ValueType extends {
-    key?: string;
-    label: React.ReactNode;
-    value: string | number;
-  },
->({
+export default function SkuSelector({
   fetchOptions,
   debounceTimeout = 800,
   ...props
-}: DebounceSelectProps<ValueType>) {
+}: DebounceSelectProps<SelectValue>) {
   const [fetching, setFetching] = useState(false);
   const [options, setOptions] = useState<SelectValue[]>([]);
   const fetchRef = useRef(0);

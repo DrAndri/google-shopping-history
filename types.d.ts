@@ -40,7 +40,7 @@ export interface PriceChartProps {
 }
 
 export interface SelectValue {
-  key?: string | undefined;
+  key: string;
   label: ReactNode;
   value: string | number;
 }
@@ -51,8 +51,8 @@ export interface MongodbDocument extends Document {
 }
 
 export interface MongodbProductMetadata extends MongodbDocument {
-  salePriceLastSeen: number | undefined;
   lastSeen: number;
+  salePriceLastSeen?: number;
 }
 
 export interface MongodbProductPrice extends MongodbDocument {
@@ -69,8 +69,8 @@ type StorePrices = Map<string, SkuPrices>;
 type StoreMap = Map<string, StorePrices>;
 
 export interface SkuPrices {
-  lastPrice: Price | undefined;
-  lastSalePrice: Price | undefined;
   prices: Price[];
   salePrices: Price[];
+  lastPrice?: Price;
+  lastSalePrice?: Price;
 }
