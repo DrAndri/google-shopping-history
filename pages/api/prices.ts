@@ -6,7 +6,7 @@ import {
   SkuPrices,
   StoreMap,
   StorePrices,
-  SkuResponse,
+  SkuPricesResponse,
 } from '../../types';
 import getMongoClient from '../../utils/mongodb';
 
@@ -40,7 +40,7 @@ export default function handler(
       )
       .sort({ timestamp: 1 });
     for await (const doc of priceChanges) {
-      const skuPrices = getSkuPrices(doc.store, doc.sku, storeMap);
+      const skuPrices = getSkuPricesFromMap(doc.store, doc.sku, storeMap);
       const entry = {
         timestamp: doc.timestamp,
         price: doc.price,
@@ -54,6 +54,7 @@ export default function handler(
       }
     }
     await addLatestPoints(skus, stores, storeMap);
+
     const response: PricesResponse = {};
     if (storeMap.size > 0) response.stores = [];
     for (const entry of storeMap.entries()) {
@@ -65,19 +66,22 @@ export default function handler(
     return response;
   };
 
-  const getSkuResponse = (storePrices: StorePrices): SkuResponse[] => {
-    const skus: SkuResponse[] = [];
+  const getSkuResponse = (storePrices: StorePrices): SkuPricesResponse[] => {
+    const skus = [];
     for (const entry of storePrices.entries()) {
-      skus.push({
+      const skuPrice = {
         sku: entry[0],
         prices: entry[1].prices,
         salePrices: entry[1].salePrices,
-      });
+      };
+      if (entry[1].salePrices.length > 0)
+        skuPrice.salePrices = entry[1].salePrices;
+      skus.push(skuPrice);
     }
     return skus;
   };
 
-  const getSkuPrices = (
+  const getSkuPricesFromMap = (
     store: string,
     sku: string,
     storeMap: StoreMap,
@@ -106,7 +110,7 @@ export default function handler(
   const addLatestPoints = async (
     skus: string[],
     stores: string[],
-    storeMaps: Map<string, Map<string, SkuPrices>>,
+    storeMaps: StoreMap,
   ) => {
     const productMetadata = mongoClient
       .db('google-shopping-scraper')
@@ -117,15 +121,14 @@ export default function handler(
           projection: {
             _id: 0,
             sku: 1,
-            timestamp: 1,
+            store: 1,
             lastSeen: 1,
             salePriceLastSeen: 1,
-            store: 1,
           },
         },
       );
     for await (const doc of productMetadata) {
-      const skuPrices = getSkuPrices(doc.store, doc.sku, storeMaps);
+      const skuPrices = getSkuPricesFromMap(doc.store, doc.sku, storeMaps);
       const lastPrice = skuPrices.lastPrice;
       if (lastPrice !== undefined && doc.lastSeen !== lastPrice.timestamp) {
         skuPrices.prices.push({

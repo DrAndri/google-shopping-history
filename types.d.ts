@@ -8,15 +8,15 @@ export interface PricesRequest extends NextApiRequest {
   };
 }
 export interface PricesResponse {
-  stores?: StoreResponse[]
+  stores?: StorePricesResponse[];
 }
 
-export interface StoreResponse {
+export interface StorePricesResponse {
   name: string;
-  skus: SkuResponse[];
+  skus: SkuPricesResponse[];
 }
 
-export interface SkuResponse {
+export interface SkuPricesResponse {
   sku: string;
   prices: Price[];
   salePrices?: Price[];
@@ -26,16 +26,6 @@ export interface Price {
   timestamp: number;
   price: number;
 }
-
-export interface PriceArray {
-  sku: string;
-  salePrice: boolean;
-  prices: Price[];
-}
-
-type PriceMap = Record<string, Price>;
-
-type PricesMap = Record<string, Price[]>;
 
 export interface RechartFormat {
   timestamp: number;
@@ -61,13 +51,11 @@ export interface MongodbDocument extends Document {
 }
 
 export interface MongodbProductMetadata extends MongodbDocument {
-  sku: string;
   salePriceLastSeen: number | undefined;
   lastSeen: number;
 }
 
 export interface MongodbProductPrice extends MongodbDocument {
-  sku: string;
   sale_price: boolean;
   price: number;
   timestamp: number;
