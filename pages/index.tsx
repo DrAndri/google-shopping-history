@@ -5,14 +5,33 @@ import {
   PricesResponse,
   AutocompleteResponse,
   SelectValue,
+  StoreConfig,
 } from '../types';
 import PriceChart from '../components/PriceChart/PriceChart';
-import { Flex, Layout } from 'antd';
+import { Flex, Layout, Select } from 'antd';
 import SkuSelector from '../components/SkuSelector/SkuSelector';
+import getMongoClient from '../utils/mongodb';
+import { InferGetServerSidePropsType } from 'next/types';
 
 const { Header, Content } = Layout;
 
-export default function Home() {
+export async function getServerSideProps() {
+  const stores = await getMongoClient()
+    .db('google-shopping-scraper')
+    .collection<StoreConfig>('stores')
+    .find({}, { projection: { name: 1 } })
+    .toArray();
+  return {
+    props: {
+      stores,
+    },
+  };
+}
+
+export default function Home({
+  stores,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  console.log(stores);
   const mainLayoutRef = useRef<HTMLElement | null>(null);
   const [prices, setPrices] = useState<RechartFormat[]>();
   const [loading, setLoading] = useState(false);
@@ -21,12 +40,16 @@ export default function Home() {
     offsetHeight: number;
   }>({ offsetHeight: 0, offsetWidth: 0 });
   const [selectedSkus, setSelectedSkus] = useState<SelectValue[]>([]);
+  const [selectedStores, setSelectedStores] = useState<string[]>([]);
 
   useEffect(() => {
     const filtered = selectedSkus.map((sku) => sku.value);
     fetch('/api/prices', {
       method: 'POST',
-      body: JSON.stringify({ skus: filtered }),
+      body: JSON.stringify({
+        skus: filtered,
+        stores: selectedStores,
+      }),
     })
       .then((res) => res.json())
       .then((res: PricesResponse) => {
@@ -34,7 +57,7 @@ export default function Home() {
         setLoading(false);
       })
       .catch((error) => console.log(error));
-  }, [selectedSkus]);
+  }, [selectedSkus, selectedStores]);
 
   useEffect(() => {
     const offsetWidth = mainLayoutRef.current
@@ -47,27 +70,38 @@ export default function Home() {
   }, []);
 
   const formatPricesForRechart = (res: PricesResponse) => {
-    const prices: RechartFormat[] = res.prices.map((price) => {
-      const key = price.sku + ' - price';
-      return {
-        [key]: price.price,
-        timestamp: price.timestamp,
-      };
+    const prices: RechartFormat[] = [];
+    res.stores?.forEach((store) => {
+      store.skus.forEach((sku) => {
+        const key = store.name + ' - ' + sku.sku + ' - price';
+        sku.prices.forEach((price) => {
+          prices.push({
+            [key]: price.price,
+            timestamp: price.timestamp,
+          });
+        });
+        const saleKey = store.name + ' - ' + sku.sku + ' - salePrice';
+        sku.salePrices?.forEach((price) => {
+          prices.push({
+            [saleKey]: price.price,
+            timestamp: price.timestamp,
+          });
+        });
+      });
     });
-    const salePrices: RechartFormat[] = res.salePrices.map((price) => {
-      const key = price.sku + ' - salePrice';
-      return {
-        [key]: price.price,
-        timestamp: price.timestamp,
-      };
-    });
-    return prices.concat(...salePrices).sort();
+    return prices;
   };
 
   async function searchForSkusBeginningWith(
     term: string,
   ): Promise<SelectValue[]> {
-    return fetch('/api/autocomplete/' + term)
+    return fetch('/api/autocomplete', {
+      method: 'POST',
+      body: JSON.stringify({
+        term: term,
+        stores: selectedStores,
+      }),
+    })
       .then((res) => res.json())
       .then((res: AutocompleteResponse) => {
         return res.terms.map((term: string) => ({
@@ -83,7 +117,13 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <Layout style={{ height: '100vh' }}>
-        <Header>
+        <Header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <SkuSelector
             mode="multiple"
             value={selectedSkus}
@@ -92,7 +132,20 @@ export default function Home() {
             onChange={(newValue) => {
               setSelectedSkus(newValue as SelectValue[]);
             }}
-            style={{ width: '100%' }}
+            style={{ width: '80%' }}
+          />
+          <Select
+            mode="multiple"
+            allowClear
+            style={{ width: '10%' }}
+            placeholder="Veldu búð"
+            defaultValue={['Origo']}
+            onChange={(newValue) => {
+              setSelectedStores(newValue);
+            }}
+            options={stores.map((store) => {
+              return { label: store.name, value: store.name };
+            })}
           />
         </Header>
         <Layout style={{ height: '100vh' }} ref={mainLayoutRef}>
