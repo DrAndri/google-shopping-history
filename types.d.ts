@@ -23,14 +23,14 @@ export interface SkuPricesResponse {
 }
 
 export interface Price {
-  timestamp: number;
+  start: number;
+  end: number;
   price: number;
 }
 
 export interface RechartFormat {
   timestamp: number;
-  price?: number;
-  salePrice?: number;
+  [key: string]: number;
 }
 
 export interface PriceChartProps {
@@ -45,20 +45,18 @@ export interface SelectValue {
   value: string | number;
 }
 
-export interface MongodbDocument extends Document {
+export interface MongodbProductMetadata extends Document {
   sku: string;
   store: string;
 }
 
-export interface MongodbProductMetadata extends MongodbDocument {
-  lastSeen: number;
-  salePriceLastSeen?: number;
-}
-
-export interface MongodbProductPrice extends MongodbDocument {
-  sale_price: boolean;
+export interface MongodbProductPrice extends Document {
+  sku: string;
+  store: string;
+  salePrice: boolean;
   price: number;
-  timestamp: number;
+  start: number;
+  end: number;
 }
 
 export interface StoreConfig {

@@ -5,13 +5,14 @@ import {
   PricesResponse,
   AutocompleteResponse,
   SelectValue,
-  StoreConfig,
+  StoreConfig
 } from '../types';
 import PriceChart from '../components/PriceChart/PriceChart';
 import { Flex, Layout, Select } from 'antd';
 import SkuSelector from '../components/SkuSelector/SkuSelector';
 import getMongoClient from '../utils/mongodb';
 import { InferGetServerSidePropsType } from 'next/types';
+import dayjs from 'dayjs';
 
 const { Header, Content } = Layout;
 
@@ -23,13 +24,13 @@ export async function getServerSideProps() {
     .toArray();
   return {
     props: {
-      stores,
-    },
+      stores
+    }
   };
 }
 
 export default function Home({
-  stores,
+  stores
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const mainLayoutRef = useRef<HTMLElement | null>(null);
   const [prices, setPrices] = useState<RechartFormat[]>();
@@ -39,16 +40,87 @@ export default function Home({
     offsetHeight: number;
   }>({ offsetHeight: 0, offsetWidth: 0 });
   const [selectedSkus, setSelectedSkus] = useState<SelectValue[]>([]);
-  const [selectedStores, setSelectedStores] = useState<string[]>(['Origo']);
+  const [selectedStores, setSelectedStores] = useState<string[]>(
+    stores.map((store) => store.name)
+  );
 
   useEffect(() => {
+    const addToArray = (price: RechartFormat, prices: RechartFormat[]) => {
+      const index = prices.findIndex(
+        (onePrice) => onePrice.timestamp === price.timestamp
+      );
+      if (index < 0) {
+        prices.push(price);
+      } else {
+        prices[index] = {
+          ...price,
+          ...prices[index]
+        };
+      }
+    };
+    const formatPricesForRechart = (res: PricesResponse) => {
+      const prices: RechartFormat[] = [];
+      res.stores?.forEach((store) => {
+        store.skus.forEach((sku) => {
+          const key = store.name + ' - ' + sku.sku + ' - price';
+          for (const price of sku.prices) {
+            const startDay = dayjs.unix(price.start).startOf('day');
+            addToArray(
+              {
+                [key]: price.price,
+                timestamp: startDay.unix()
+              },
+              prices
+            );
+            const endDay = dayjs.unix(price.end).endOf('day');
+            let nextDay = startDay.add(1, 'day');
+            while (nextDay.isBefore(endDay)) {
+              addToArray(
+                {
+                  [key]: price.price,
+                  timestamp: nextDay.unix()
+                },
+                prices
+              );
+              nextDay = nextDay.add(1, 'day');
+            }
+          }
+          const saleKey = store.name + ' - ' + sku.sku + ' - salePrice';
+          if (sku.salePrices) {
+            for (const price of sku.salePrices) {
+              const startDay = dayjs.unix(price.start).startOf('day');
+              addToArray(
+                {
+                  [saleKey]: price.price,
+                  timestamp: startDay.unix()
+                },
+                prices
+              );
+              const endDay = dayjs.unix(price.end).endOf('day');
+              let nextDay = startDay.add(1, 'day');
+              while (nextDay.isBefore(endDay)) {
+                addToArray(
+                  {
+                    [saleKey]: price.price,
+                    timestamp: nextDay.unix()
+                  },
+                  prices
+                );
+                nextDay = nextDay.add(1, 'day');
+              }
+            }
+          }
+        });
+      });
+      return prices;
+    };
     const filtered = selectedSkus.map((sku) => sku.value);
     fetch('/api/prices', {
       method: 'POST',
       body: JSON.stringify({
         skus: filtered,
-        stores: selectedStores,
-      }),
+        stores: selectedStores
+      })
     })
       .then((res) => res.json())
       .then((res: PricesResponse) => {
@@ -68,45 +140,22 @@ export default function Home({
     setMainLayoutDimensions({ offsetWidth, offsetHeight });
   }, []);
 
-  const formatPricesForRechart = (res: PricesResponse) => {
-    const prices: RechartFormat[] = [];
-    res.stores?.forEach((store) => {
-      store.skus.forEach((sku) => {
-        const key = store.name + ' - ' + sku.sku + ' - price';
-        sku.prices.forEach((price) => {
-          prices.push({
-            [key]: price.price,
-            timestamp: price.timestamp,
-          });
-        });
-        const saleKey = store.name + ' - ' + sku.sku + ' - salePrice';
-        sku.salePrices?.forEach((price) => {
-          prices.push({
-            [saleKey]: price.price,
-            timestamp: price.timestamp,
-          });
-        });
-      });
-    });
-    return prices;
-  };
-
   async function searchForSkusBeginningWith(
-    term: string,
+    term: string
   ): Promise<SelectValue[]> {
     return fetch('/api/autocomplete', {
       method: 'POST',
       body: JSON.stringify({
         term: term,
-        stores: selectedStores,
-      }),
+        stores: selectedStores
+      })
     })
       .then((res) => res.json())
       .then((res: AutocompleteResponse) => {
         return res.terms.map((term: string) => ({
           key: term,
           label: term,
-          value: term,
+          value: term
         }));
       });
   }
@@ -121,7 +170,7 @@ export default function Home({
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'space-between'
           }}
         >
           <SkuSelector
@@ -139,7 +188,7 @@ export default function Home({
             allowClear
             style={{ width: '10%' }}
             placeholder="Veldu búð"
-            defaultValue={['Origo']}
+            defaultValue={selectedStores}
             onChange={(newValue) => {
               setSelectedStores(newValue);
             }}

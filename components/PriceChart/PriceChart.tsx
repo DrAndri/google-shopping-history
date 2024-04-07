@@ -5,7 +5,7 @@ import {
   LineChart,
   Tooltip,
   XAxis,
-  YAxis,
+  YAxis
 } from 'recharts';
 import { PriceChartProps } from '../../types';
 import dayjs from 'dayjs';
@@ -34,6 +34,7 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
         <Line
           key={key}
           type="stepAfter"
+          dot={false}
           stroke={getRandomColor()}
           dataKey={key}
         />
@@ -57,11 +58,8 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
     return timestamps;
   };
 
-  const lowestAndHighestOfTimestamps = () => {
-    const lowestTimestamp = prices[0].timestamp;
-    const highestTimestamp = prices[prices.length - 1].timestamp;
-    return [lowestTimestamp, highestTimestamp];
-  };
+  const formatPrice = (number: number) =>
+    number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr.';
 
   return (
     <LineChart
@@ -73,20 +71,18 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
       <XAxis
         dataKey="timestamp"
         type="number"
-        domain={lowestAndHighestOfTimestamps()}
+        domain={['dataMin', 'dataMax']}
         ticks={everyMonthInRange()}
         tickFormatter={(value: number) => {
           const date = dayjs.unix(value);
           return date.format('MM/YY');
         }}
       />
-      <YAxis
-        width={90}
-        tickFormatter={(value: number) =>
-          value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr.'
-        }
+      <YAxis width={90} tickFormatter={(value: number) => formatPrice(value)} />
+      <Tooltip
+        labelFormatter={(t: number) => dayjs.unix(t).format('DD-MMM-YYYY')}
+        formatter={(value: number) => formatPrice(value)}
       />
-      <Tooltip labelFormatter={(t: number) => dayjs.unix(t).toLocaleString()} />
       <CartesianGrid stroke="#c2c2c2" strokeDasharray="3 3" />
       <Legend />
       {getRechartLines()}

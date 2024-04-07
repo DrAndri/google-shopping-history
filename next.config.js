@@ -39,8 +39,8 @@ const nextConfig = {
     'rc-tree',
     'rc-tree-select',
     'rc-upload',
-    'rc-util',
-  ],
+    'rc-util'
+  ]
 };
 
 module.exports = nextConfig;
