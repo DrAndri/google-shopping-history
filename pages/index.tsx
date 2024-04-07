@@ -33,12 +33,8 @@ export default function Home({
   stores
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const mainLayoutRef = useRef<HTMLElement | null>(null);
-  const [prices, setPrices] = useState<RechartFormat[]>();
+  const [prices, setPrices] = useState<RechartFormat[]>([]);
   const [loading, setLoading] = useState(false);
-  const [mainLayoutDimensions, setMainLayoutDimensions] = useState<{
-    offsetWidth: number;
-    offsetHeight: number;
-  }>({ offsetHeight: 0, offsetWidth: 0 });
   const [selectedSkus, setSelectedSkus] = useState<SelectValue[]>([]);
   const [selectedStores, setSelectedStores] = useState<string[]>(
     stores.map((store) => store.name)
@@ -130,16 +126,6 @@ export default function Home({
       .catch((error) => console.log(error));
   }, [selectedSkus, selectedStores]);
 
-  useEffect(() => {
-    const offsetWidth = mainLayoutRef.current
-      ? mainLayoutRef.current.offsetWidth
-      : 0;
-    const offsetHeight = mainLayoutRef.current
-      ? mainLayoutRef.current.offsetHeight
-      : 0;
-    setMainLayoutDimensions({ offsetWidth, offsetHeight });
-  }, []);
-
   async function searchForSkusBeginningWith(
     term: string
   ): Promise<SelectValue[]> {
@@ -204,13 +190,7 @@ export default function Home({
               align="center"
               style={{ height: '100%' }}
             >
-              {prices && prices.length > 0 && (
-                <PriceChart
-                  prices={prices}
-                  width={mainLayoutDimensions.offsetWidth - 50}
-                  height={mainLayoutDimensions.offsetHeight - 50}
-                />
-              )}
+              <PriceChart prices={prices} />
             </Flex>
           </Content>
         </Layout>

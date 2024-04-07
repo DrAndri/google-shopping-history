@@ -35,8 +35,6 @@ export interface RechartFormat {
 
 export interface PriceChartProps {
   prices: RechartFormat[];
-  width: number;
-  height: number;
 }
 
 export interface SelectValue {

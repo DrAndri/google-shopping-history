@@ -3,6 +3,7 @@ import {
   Legend,
   Line,
   LineChart,
+  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis
@@ -10,12 +11,38 @@ import {
 import { PriceChartProps } from '../../types';
 import dayjs from 'dayjs';
 
-export default function PriceChart({ prices, width, height }: PriceChartProps) {
-  const getRandomColor = () => {
-    return (
-      '#' + ((Math.random() * 0xffffff) << 0).toString(16).padStart(6, '0')
-    );
+export default function PriceChart({ prices }: PriceChartProps) {
+  const colors = [
+    '#c10000',
+    '#c15b00',
+    '#c1ae00',
+    '#5dc100',
+    '#00c184',
+    '#003ac1',
+    '#7800c1',
+    '#c100ab',
+    '#000000',
+    '#525252',
+    '#003fff',
+    '#ff0000',
+    '#ff00fb',
+    '#27ff00'
+  ];
+
+  const nameToColor = (name: string) => {
+    const hash = hashStr(name);
+    const index = hash % colors.length;
+    return colors[index];
   };
+
+  function hashStr(str: string) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const charCode = str.charCodeAt(i);
+      hash += charCode;
+    }
+    return hash;
+  }
 
   const getRechartLines = () => {
     if (!prices) return null;
@@ -30,12 +57,15 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
     const filtered = flattened.filter((key) => key !== 'timestamp');
     const uniqueKeys = [...new Set(filtered)];
     return uniqueKeys.map((key) => {
+      const isSalePrice = key.includes('salePrice');
       return (
         <Line
           key={key}
           type="stepAfter"
           dot={false}
-          stroke={getRandomColor()}
+          stroke={nameToColor(key.substring(0, key.lastIndexOf(' - ')))}
+          strokeWidth={2}
+          strokeDasharray={isSalePrice ? '4 2' : '0'}
           dataKey={key}
         />
       );
@@ -59,33 +89,46 @@ export default function PriceChart({ prices, width, height }: PriceChartProps) {
   };
 
   const formatPrice = (number: number) =>
-    number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr.';
-
-  return (
-    <LineChart
-      width={width}
-      height={height}
-      data={prices}
-      margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-    >
-      <XAxis
-        dataKey="timestamp"
-        type="number"
-        domain={['dataMin', 'dataMax']}
-        ticks={everyMonthInRange()}
-        tickFormatter={(value: number) => {
-          const date = dayjs.unix(value);
-          return date.format('MM/YY');
-        }}
-      />
-      <YAxis width={90} tickFormatter={(value: number) => formatPrice(value)} />
-      <Tooltip
-        labelFormatter={(t: number) => dayjs.unix(t).format('DD-MMM-YYYY')}
-        formatter={(value: number) => formatPrice(value)}
-      />
-      <CartesianGrid stroke="#c2c2c2" strokeDasharray="3 3" />
-      <Legend />
-      {getRechartLines()}
-    </LineChart>
-  );
+    number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  if (prices.length > 0) {
+    return (
+      <ResponsiveContainer height={'99%'} width={'100%'}>
+        <LineChart
+          data={prices}
+          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+        >
+          <XAxis
+            dataKey="timestamp"
+            type="number"
+            domain={['dataMin - 500000', 'dataMax']}
+            ticks={everyMonthInRange()}
+            tickFormatter={(value: number) => {
+              const date = dayjs.unix(value);
+              return date.format('MMM-YYYY');
+            }}
+          />
+          <YAxis
+            width={90}
+            tickFormatter={(value: number) => formatPrice(value)}
+            domain={[
+              (dataMin: number) => Math.floor(dataMin / 10000) * 10000,
+              (dataMax: number) => Math.ceil(dataMax / 10000) * 10000
+            ]}
+          />
+          <Tooltip
+            labelFormatter={(t: number) => dayjs.unix(t).format('DD-MMM-YYYY')}
+            labelStyle={{ fontWeight: 'bold' }}
+            formatter={(value: number) => formatPrice(value) + ' kr.'}
+          />
+          <CartesianGrid stroke="#c2c2c2" strokeDasharray="3 3" />
+          <Legend
+            wrapperStyle={{ paddingBottom: 20 }}
+            align="center"
+            verticalAlign="top"
+          />
+          {getRechartLines()}
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  } else return null;
 }
