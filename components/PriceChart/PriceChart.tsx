@@ -73,8 +73,14 @@ export default function PriceChart({ prices }: PriceChartProps) {
   };
 
   const everyMonthInRange = () => {
-    const lowestTimestamp = prices[0].timestamp;
-    const highestTimestamp = prices[prices.length - 1].timestamp;
+    let lowestTimestamp = prices[0].timestamp;
+    let highestTimestamp = prices[prices.length - 1].timestamp;
+    for (const price of prices) {
+      if (price.timestamp < lowestTimestamp) lowestTimestamp = price.timestamp;
+      if (price.timestamp > highestTimestamp)
+        highestTimestamp = price.timestamp;
+    }
+
     const timestamps = [];
     const lowest = dayjs.unix(lowestTimestamp);
     const highest = dayjs.unix(highestTimestamp);

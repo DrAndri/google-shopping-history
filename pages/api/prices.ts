@@ -1,16 +1,17 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import {
   PricesResponse,
   MongodbProductPrice,
   SkuPrices,
   StoreMap,
   StorePrices,
-  SkuPricesResponse
+  SkuPricesResponse,
+  PricesApiRequest
 } from '../../types';
 import getMongoClient from '../../utils/mongodb';
 
 export default function handler(
-  req: NextApiRequest,
+  req: PricesApiRequest,
   res: NextApiResponse<PricesResponse>
 ) {
   const mongoClient = getMongoClient();
@@ -107,13 +108,8 @@ export default function handler(
     }
     return skuPrices!;
   };
-
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument
-  const body = JSON.parse(req.body);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-  const skus: string[] = body?.skus;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-  const stores: string[] = body?.stores;
+  const skus: string[] = req.body.skus;
+  const stores: string[] = req.body.stores;
 
   return new Promise<void>((resolve, reject) => {
     if (!skus || skus.length == 0 || !stores || stores.length == 0) {

@@ -12,7 +12,7 @@ export interface DebounceSelectProps<ValueType>
 
 export default function SkuSelector({
   fetchOptions,
-  debounceTimeout = 800,
+  debounceTimeout = 500,
   ...props
 }: DebounceSelectProps<SelectValue>) {
   const [fetching, setFetching] = useState(false);

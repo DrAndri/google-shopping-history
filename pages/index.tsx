@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import styles from '../styles/Home.module.css';
 import {
   RechartFormat,
@@ -13,6 +13,7 @@ import SkuSelector from '../components/SkuSelector/SkuSelector';
 import getMongoClient from '../utils/mongodb';
 import { InferGetServerSidePropsType } from 'next/types';
 import dayjs from 'dayjs';
+import callApi from '../utils/api';
 
 const { Header, Content } = Layout;
 
@@ -32,15 +33,19 @@ export async function getServerSideProps() {
 export default function Home({
   stores
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const mainLayoutRef = useRef<HTMLElement | null>(null);
   const [prices, setPrices] = useState<RechartFormat[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingPrices, setLoadingPrices] = useState(false);
   const [selectedSkus, setSelectedSkus] = useState<SelectValue[]>([]);
   const [selectedStores, setSelectedStores] = useState<string[]>(
     stores.map((store) => store.name)
   );
 
   useEffect(() => {
+    const skuValues = selectedSkus.map((sku) => sku.value);
+    if (skuValues.length === 0 || selectedStores.length === 0) {
+      setPrices([]);
+      return;
+    }
     const addToArray = (price: RechartFormat, prices: RechartFormat[]) => {
       const index = prices.findIndex(
         (onePrice) => onePrice.timestamp === price.timestamp
@@ -110,18 +115,15 @@ export default function Home({
       });
       return prices;
     };
-    const filtered = selectedSkus.map((sku) => sku.value);
-    fetch('/api/prices', {
-      method: 'POST',
-      body: JSON.stringify({
-        skus: filtered,
-        stores: selectedStores
-      })
+
+    callApi('prices', {
+      skus: skuValues,
+      stores: selectedStores
     })
       .then((res) => res.json())
       .then((res: PricesResponse) => {
         setPrices(formatPricesForRechart(res));
-        setLoading(false);
+        setLoadingPrices(false);
       })
       .catch((error) => console.log(error));
   }, [selectedSkus, selectedStores]);
@@ -129,12 +131,9 @@ export default function Home({
   async function searchForSkusBeginningWith(
     term: string
   ): Promise<SelectValue[]> {
-    return fetch('/api/autocomplete', {
-      method: 'POST',
-      body: JSON.stringify({
-        term: term,
-        stores: selectedStores
-      })
+    return callApi('autocomplete', {
+      term: term,
+      stores: selectedStores
     })
       .then((res) => res.json())
       .then((res: AutocompleteResponse) => {
@@ -144,10 +143,6 @@ export default function Home({
           value: term
         }));
       });
-  }
-
-  if (loading) {
-    return <div>loading...</div>;
   }
   return (
     <div className={styles.container}>
@@ -161,13 +156,16 @@ export default function Home({
         >
           <SkuSelector
             mode="multiple"
+            allowClear
             value={selectedSkus}
             placeholder="Leitaðu að vörunúmeri..."
             fetchOptions={searchForSkusBeginningWith}
             onChange={(newValue) => {
               setSelectedSkus(newValue as SelectValue[]);
+              setLoadingPrices(true);
             }}
             style={{ width: '89%' }}
+            loading={loadingPrices}
           />
           <Select
             mode="multiple"
@@ -177,13 +175,15 @@ export default function Home({
             defaultValue={selectedStores}
             onChange={(newValue) => {
               setSelectedStores(newValue);
+              setLoadingPrices(true);
             }}
             options={stores.map((store) => {
               return { label: store.name, value: store.name };
             })}
+            loading={loadingPrices}
           />
         </Header>
-        <Layout style={{ height: '100vh' }} ref={mainLayoutRef}>
+        <Layout style={{ height: '100vh' }}>
           <Content>
             <Flex
               justify="space-around"

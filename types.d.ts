@@ -1,11 +1,20 @@
 import { Document } from 'mongodb';
-export interface AutocompleteResponse {
-  terms: string[];
-}
-export interface PricesRequest extends NextApiRequest {
+
+export interface AutocompleteApiRequest extends NextApiRequest {
   body: {
+    stores: string[];
+    term: string;
+  };
+}
+
+export interface PricesApiRequest extends NextApiRequest {
+  body: {
+    stores: string[];
     skus: string[];
   };
+}
+export interface AutocompleteResponse {
+  terms: string[];
 }
 export interface PricesResponse {
   stores?: StorePricesResponse[];
@@ -61,8 +70,8 @@ export interface StoreConfig {
   name: string;
 }
 
-type StorePrices = Map<string, SkuPrices>;
-type StoreMap = Map<string, StorePrices>;
+export type StorePrices = Map<string, SkuPrices>;
+export type StoreMap = Map<string, StorePrices>;
 
 export interface SkuPrices {
   prices: Price[];
