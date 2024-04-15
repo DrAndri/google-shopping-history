@@ -1,27 +1,30 @@
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import styles from '../styles/Home.module.css';
 import {
   RechartFormat,
   PricesResponse,
   AutocompleteResponse,
   SelectValue,
-  StoreConfig
+  StoreConfig,
+  PricesApiRequestBody,
+  AutocompleteApiRequestBody
 } from '../types';
-import PriceChart from '../components/PriceChart/PriceChart';
-import { Flex, Layout, Select } from 'antd';
+import { DatePicker, Flex, Layout, Select } from 'antd';
 import SkuSelector from '../components/SkuSelector/SkuSelector';
-import getMongoClient from '../utils/mongodb';
+import getMongoDb from '../utils/mongodb';
 import { InferGetServerSidePropsType } from 'next/types';
-import dayjs from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import callApi from '../utils/api';
 
 const { Header, Content } = Layout;
+const { RangePicker } = DatePicker;
+const PriceChart = dynamic(() => import('../components/PriceChart/PriceChart'));
 
 export async function getServerSideProps() {
-  const stores = await getMongoClient()
-    .db('google-shopping-scraper')
+  const stores = await getMongoDb()
     .collection<StoreConfig>('stores')
-    .find({}, { projection: { name: 1 } })
+    .find({}, { projection: { _id: 0, name: 1 } })
     .toArray();
   return {
     props: {
@@ -36,6 +39,9 @@ export default function Home({
   const [prices, setPrices] = useState<RechartFormat[]>([]);
   const [loadingPrices, setLoadingPrices] = useState(false);
   const [selectedSkus, setSelectedSkus] = useState<SelectValue[]>([]);
+  const [selectedRange, setSelectedRange] = useState<
+    [start: Dayjs | null, end: Dayjs | null] | null
+  >(null);
   const [selectedStores, setSelectedStores] = useState<string[]>(
     stores.map((store) => store.name)
   );
@@ -116,25 +122,35 @@ export default function Home({
       return prices;
     };
 
-    callApi('prices', {
+    const body: PricesApiRequestBody = {
       skus: skuValues,
       stores: selectedStores
-    })
+    };
+
+    if (selectedRange !== null) {
+      body.start = selectedRange[0]?.unix();
+      body.end = selectedRange[1]?.unix();
+    }
+
+    setLoadingPrices(true);
+
+    callApi('prices', body)
       .then((res) => res.json())
       .then((res: PricesResponse) => {
         setPrices(formatPricesForRechart(res));
         setLoadingPrices(false);
       })
       .catch((error) => console.log(error));
-  }, [selectedSkus, selectedStores]);
+  }, [selectedSkus, selectedStores, selectedRange]);
 
   async function searchForSkusBeginningWith(
     term: string
   ): Promise<SelectValue[]> {
-    return callApi('autocomplete', {
+    const body: AutocompleteApiRequestBody = {
       term: term,
       stores: selectedStores
-    })
+    };
+    return callApi('autocomplete', body)
       .then((res) => res.json())
       .then((res: AutocompleteResponse) => {
         return res.terms.map((term: string) => ({
@@ -148,45 +164,56 @@ export default function Home({
     <div className={styles.container}>
       <Layout style={{ height: '100vh' }}>
         <Header
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}
+          style={{ minHeight: 64, height: 'unset', padding: '20px 50px' }}
         >
-          <SkuSelector
-            mode="multiple"
-            allowClear
-            value={selectedSkus}
-            placeholder="Leitaðu að vörunúmeri..."
-            fetchOptions={searchForSkusBeginningWith}
-            onChange={(newValue) => {
-              setSelectedSkus(newValue as SelectValue[]);
-              setLoadingPrices(true);
-            }}
-            style={{ width: '89%' }}
-            loading={loadingPrices}
-          />
-          <Select
-            mode="multiple"
-            allowClear
-            style={{ width: '10%' }}
-            placeholder="Veldu búð"
-            defaultValue={selectedStores}
-            onChange={(newValue) => {
-              setSelectedStores(newValue);
-              setLoadingPrices(true);
-            }}
-            options={stores.map((store) => {
-              return { label: store.name, value: store.name };
-            })}
-            loading={loadingPrices}
-          />
+          <Flex
+            justify="space-between"
+            align="center"
+            gap={10}
+            style={{ height: '100%', width: '100%' }}
+            wrap="wrap"
+          >
+            <SkuSelector
+              mode="multiple"
+              allowClear
+              value={selectedSkus}
+              placeholder="Leitaðu að vörunúmeri..."
+              fetchOptions={searchForSkusBeginningWith}
+              onChange={(newValue) => {
+                setSelectedSkus(newValue as SelectValue[]);
+              }}
+              style={{ minWidth: 300, flex: 1 }}
+              loading={loadingPrices}
+            />
+            <RangePicker
+              style={{ width: 250 }}
+              format={'DD-MMM-YYYY'}
+              placeholder={['Byrjun', 'Endir']}
+              onChange={(dates) => {
+                setSelectedRange(dates);
+              }}
+              allowEmpty={[true, true]}
+            />
+            <Select
+              mode="multiple"
+              allowClear
+              style={{ width: 200 }}
+              placeholder="Veldu búð"
+              defaultValue={selectedStores}
+              onChange={(newValue) => {
+                setSelectedStores(newValue);
+              }}
+              options={stores.map((store) => {
+                return { label: store.name, value: store.name };
+              })}
+              loading={loadingPrices}
+            />
+          </Flex>
         </Header>
         <Layout style={{ height: '100vh' }}>
           <Content>
             <Flex
-              justify="space-around"
+              justify="space-between"
               align="center"
               style={{ height: '100%' }}
             >

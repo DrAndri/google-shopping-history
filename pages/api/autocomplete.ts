@@ -4,28 +4,24 @@ import {
   AutocompleteResponse,
   MongodbProductMetadata
 } from '../../types';
-import getMongoClient from '../../utils/mongodb';
+import getMongoDb from '../../utils/mongodb';
 
 export default function handler(
   req: AutocompleteApiRequest,
   res: NextApiResponse<AutocompleteResponse>
 ) {
-  const mongoClient = getMongoClient();
+  const mongoDb = getMongoDb();
 
   const getTerms = async () => {
-    const distinctSkus = await mongoClient
-      .db('google-shopping-scraper')
+    const filter = {
+      sku: { $regex: new RegExp(`^${req.body.term}`) },
+      store: { $in: req.body.stores }
+    };
+    const distinctSkus = await mongoDb
       .collection<MongodbProductMetadata>('productMetadata')
-      .distinct(
-        'sku',
-        {
-          sku: { $regex: new RegExp(`^${req.body.term}`) },
-          store: { $in: req.body.stores }
-        },
-        {
-          collation: { locale: 'is', numericOrdering: true }
-        }
-      );
+      .distinct('sku', filter, {
+        collation: { locale: 'is', numericOrdering: true }
+      });
     if (distinctSkus.length > 20) distinctSkus.splice(20);
     return distinctSkus;
   };

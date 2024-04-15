@@ -1,17 +1,20 @@
 import { Document } from 'mongodb';
 
 export interface AutocompleteApiRequest extends NextApiRequest {
-  body: {
-    stores: string[];
-    term: string;
-  };
+  body: AutocompleteApiRequestBody;
 }
-
+export interface AutocompleteApiRequestBody {
+  stores: string[];
+  term: string;
+}
 export interface PricesApiRequest extends NextApiRequest {
-  body: {
-    stores: string[];
-    skus: string[];
-  };
+  body: PricesApiRequestBody;
+}
+export interface PricesApiRequestBody {
+  stores: string[];
+  skus: string[];
+  start?: number;
+  end?: number;
 }
 export interface AutocompleteResponse {
   terms: string[];
@@ -49,7 +52,7 @@ export interface PriceChartProps {
 export interface SelectValue {
   key: string;
   label: ReactNode;
-  value: string | number;
+  value: string;
 }
 
 export interface MongodbProductMetadata extends Document {

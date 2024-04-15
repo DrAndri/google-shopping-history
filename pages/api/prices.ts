@@ -8,39 +8,55 @@ import {
   SkuPricesResponse,
   PricesApiRequest
 } from '../../types';
-import getMongoClient from '../../utils/mongodb';
+import getMongoDb from '../../utils/mongodb';
+import { Filter } from 'mongodb';
 
 export default function handler(
   req: PricesApiRequest,
   res: NextApiResponse<PricesResponse>
 ) {
-  const mongoClient = getMongoClient();
+  const mongoDb = getMongoDb();
 
   const getPriceChanges = async (
     skus: string[],
-    stores: string[]
+    stores: string[],
+    startDate: number | undefined,
+    endDate: number | undefined
   ): Promise<PricesResponse> => {
     const storeMap: StoreMap = new Map<string, Map<string, SkuPrices>>();
 
-    const priceChanges = mongoClient
-      .db('google-shopping-scraper')
+    const filter: Filter<MongodbProductPrice> = {
+      sku: { $in: skus },
+      store: { $in: stores }
+    };
+    if (startDate !== undefined) {
+      filter.end = {
+        $gte: startDate
+      };
+    }
+
+    if (endDate !== undefined) {
+      filter.start = {
+        $lte: endDate
+      };
+    }
+
+    const options = {
+      projection: {
+        _id: 0,
+        sku: 1,
+        price: 1,
+        store: 1,
+        salePrice: 1,
+        start: 1,
+        end: 1
+      }
+    };
+
+    const priceChanges = mongoDb
       .collection<MongodbProductPrice>('priceChanges')
-      .find(
-        { sku: { $in: skus }, store: { $in: stores } },
-        {
-          projection: {
-            _id: 0,
-            sku: 1,
-            price: 1,
-            store: 1,
-            salePrice: 1,
-            timestamp: 1,
-            start: 1,
-            end: 1
-          }
-        }
-      )
-      .sort({ timestamp: 1 });
+      .find(filter, options)
+      .sort({ start: 1 });
     for await (const doc of priceChanges) {
       const skuPrices = getSkuPricesFromMap(doc.store, doc.sku, storeMap);
       const entry = {
@@ -110,13 +126,15 @@ export default function handler(
   };
   const skus: string[] = req.body.skus;
   const stores: string[] = req.body.stores;
+  const start: number | undefined = req.body.start;
+  const end: number | undefined = req.body.end;
 
   return new Promise<void>((resolve, reject) => {
     if (!skus || skus.length == 0 || !stores || stores.length == 0) {
       res.status(200);
       resolve();
     } else {
-      getPriceChanges(skus, stores)
+      getPriceChanges(skus, stores, start, end)
         .then((body) => {
           if (body.stores && body.stores.length > 0) {
             res.status(200).json(body);
