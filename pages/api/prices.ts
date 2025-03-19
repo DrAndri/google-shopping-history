@@ -145,7 +145,7 @@ export default function handler(
         })
         .catch((error) => {
           console.log(error);
-          reject(error);
+          reject(new Error(error));
         });
     }
   });

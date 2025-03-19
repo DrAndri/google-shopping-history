@@ -36,6 +36,6 @@ export default function handler(
         res.status(200).json({ terms: terms });
         resolve();
       })
-      .catch((error) => reject(error));
+      .catch((error) => reject(new Error(error)));
   });
 }
