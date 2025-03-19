@@ -10,24 +10,25 @@
     "prettier": "prettier --write \"pages/**/*\""
   },
   "dependencies": {
-    "@ant-design/cssinjs": "1.21.1",
-    "antd": "^5.21.3",
+    "@ant-design/cssinjs": "1.23.0",
+    "antd": "^5.24.4",
     "dayjs": "^1.11.13",
-    "mongodb": "^6.9.0",
-    "next": "^14.2.15",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "recharts": "^2.13.0"
+    "mongodb": "^6.15.0",
+    "next": "^15.2.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "recharts": "^2.15.1"
   },
   "devDependencies": {
-    "@types/lodash": "^4.17.10",
-    "@types/node": "^22.7.5",
-    "@types/react": "^18.3.11",
-    "@types/react-dom": "^18.3.1",
-    "eslint": "^9.12.0",
-    "eslint-config-next": "^14.2.15",
-    "prettier": "^3.3.3",
-    "typescript": "^5.6.3",
-    "typescript-eslint": "^8.8.1"
+    "@types/lodash": "^4.17.16",
+    "@types/node": "^22.13.10",
+    "@types/react": "^19.0.11",
+    "@types/react-dom": "^19.0.4",
+    "eslint": "^9.22.0",
+    "eslint-config-next": "^15.2.3",
+    "eslint-config-prettier": "^10.1.1",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.1"
   }
 }
