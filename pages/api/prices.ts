@@ -145,7 +145,7 @@ export default function handler(
         })
         .catch((error) => {
           console.log(error);
-          reject(new Error(error));
+          reject(new Error('Error occured when getting prices'));
         });
     }
   });
