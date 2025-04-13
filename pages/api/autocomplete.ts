@@ -15,7 +15,7 @@ export default function handler(
   const getTerms = async () => {
     const filter = {
       sku: { $regex: new RegExp(`^${req.body.term}`) },
-      store: { $in: req.body.stores }
+      store_id: { $in: req.body.stores }
     };
     const distinctSkus = await mongoDb
       .collection<MongodbProductMetadata>('productMetadata')

@@ -9,7 +9,7 @@ import {
   PricesApiRequest
 } from '../../types';
 import getMongoDb from '../../utils/mongodb';
-import { Filter } from 'mongodb';
+import { Filter, ObjectId } from 'mongodb';
 
 export default function handler(
   req: PricesApiRequest,
@@ -19,7 +19,7 @@ export default function handler(
 
   const getPriceChanges = async (
     skus: string[],
-    stores: string[],
+    stores: ObjectId[],
     startDate: number | undefined,
     endDate: number | undefined
   ): Promise<PricesResponse> => {
@@ -27,7 +27,7 @@ export default function handler(
 
     const filter: Filter<MongodbProductPrice> = {
       sku: { $in: skus },
-      store: { $in: stores }
+      store_id: { $in: stores }
     };
     if (startDate !== undefined) {
       filter.end = {
@@ -58,7 +58,7 @@ export default function handler(
       .find(filter, options)
       .sort({ start: 1 });
     for await (const doc of priceChanges) {
-      const skuPrices = getSkuPricesFromMap(doc.store, doc.sku, storeMap);
+      const skuPrices = getSkuPricesFromMap(doc.store_id, doc.sku, storeMap);
       const entry = {
         start: doc.start,
         end: doc.end,
@@ -125,7 +125,7 @@ export default function handler(
     return skuPrices!;
   };
   const skus: string[] = req.body.skus;
-  const stores: string[] = req.body.stores;
+  const stores: ObjectId[] = req.body.stores;
   const start: number | undefined = req.body.start;
   const end: number | undefined = req.body.end;
 

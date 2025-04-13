@@ -2,14 +2,14 @@ export interface AutocompleteApiRequest extends NextApiRequest {
   body: AutocompleteApiRequestBody;
 }
 export interface AutocompleteApiRequestBody {
-  stores: string[];
+  stores: ObjectId[];
   term: string;
 }
 export interface PricesApiRequest extends NextApiRequest {
   body: PricesApiRequestBody;
 }
 export interface PricesApiRequestBody {
-  stores: string[];
+  stores: ObjectId[];
   skus: string[];
   start?: number;
   end?: number;
@@ -55,12 +55,12 @@ export interface SelectValue {
 
 export interface MongodbProductMetadata {
   sku: string;
-  store: string;
+  store_id: ObjectId;
 }
 
 export interface MongodbProductPrice {
   sku: string;
-  store: string;
+  store_id: ObjectId;
   salePrice: boolean;
   price: number;
   start: number;

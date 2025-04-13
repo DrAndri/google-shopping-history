@@ -16,6 +16,7 @@ import getMongoDb from '../utils/mongodb';
 import { InferGetServerSidePropsType } from 'next/types';
 import dayjs, { Dayjs } from 'dayjs';
 import callApi from '../utils/api';
+import { ObjectId } from 'mongodb';
 
 const { Header, Content } = Layout;
 const { RangePicker } = DatePicker;
@@ -42,8 +43,8 @@ export default function Home({
   const [selectedRange, setSelectedRange] = useState<
     [start: Dayjs | null, end: Dayjs | null] | null
   >(null);
-  const [selectedStores, setSelectedStores] = useState<string[]>(
-    stores.map((store) => store.name)
+  const [selectedStores, setSelectedStores] = useState<ObjectId[]>(
+    stores.map((store) => store._id)
   );
 
   useEffect(() => {
@@ -204,7 +205,7 @@ export default function Home({
                 setSelectedStores(newValue);
               }}
               options={stores.map((store) => {
-                return { label: store.name, value: store.name };
+                return { label: store.name, value: store._id };
               })}
               loading={loadingPrices}
             />
