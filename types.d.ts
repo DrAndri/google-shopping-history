@@ -1,5 +1,3 @@
-import { Document } from 'mongodb';
-
 export interface AutocompleteApiRequest extends NextApiRequest {
   body: AutocompleteApiRequestBody;
 }
@@ -55,12 +53,12 @@ export interface SelectValue {
   value: string;
 }
 
-export interface MongodbProductMetadata extends Document {
+export interface MongodbProductMetadata {
   sku: string;
   store: string;
 }
 
-export interface MongodbProductPrice extends Document {
+export interface MongodbProductPrice {
   sku: string;
   store: string;
   salePrice: boolean;
