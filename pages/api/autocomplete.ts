@@ -5,6 +5,7 @@ import {
   MongodbProductMetadata
 } from '../../types';
 import getMongoDb from '../../utils/mongodb';
+import { ObjectId } from 'mongodb';
 
 export default function handler(
   req: AutocompleteApiRequest,
@@ -15,15 +16,16 @@ export default function handler(
   const getTerms = async () => {
     const filter = {
       sku: { $regex: new RegExp(`^${req.body.term}`) },
-      store_id: { $in: req.body.stores }
+      store_id: {
+        $in: req.body.stores.map((store_id) => new ObjectId(store_id))
+      }
     };
     const distinctSkus = await mongoDb
       .collection<MongodbProductMetadata>('productMetadata')
       .distinct('sku', filter, {
         collation: { locale: 'is', numericOrdering: true }
       });
-    if (distinctSkus.length > 20) distinctSkus.splice(20);
-    return distinctSkus;
+    return distinctSkus.splice(0, 20);
   };
 
   return new Promise<void>((resolve, reject) => {

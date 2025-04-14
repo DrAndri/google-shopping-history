@@ -1,15 +1,17 @@
+import { ObjectId } from 'mongodb';
+
 export interface AutocompleteApiRequest extends NextApiRequest {
   body: AutocompleteApiRequestBody;
 }
 export interface AutocompleteApiRequestBody {
-  stores: ObjectId[];
+  stores: string[];
   term: string;
 }
 export interface PricesApiRequest extends NextApiRequest {
   body: PricesApiRequestBody;
 }
 export interface PricesApiRequestBody {
-  stores: ObjectId[];
+  stores: string[];
   skus: string[];
   start?: number;
   end?: number;
@@ -22,7 +24,7 @@ export interface PricesResponse {
 }
 
 export interface StorePricesResponse {
-  name: string;
+  id: string;
   skus: SkuPricesResponse[];
 }
 
@@ -53,9 +55,28 @@ export interface SelectValue {
   value: string;
 }
 
+export type StorePrices = Map<string, SkuPrices>;
+export type StoreMap = Map<string, StorePrices>;
+
+export interface SkuPrices {
+  prices: Price[];
+  salePrices: Price[];
+  lastPrice?: Price;
+  lastSalePrice?: Price;
+}
+
+//START db types
+export interface StoreConfig {
+  name: string;
+  apiEnabled: boolean;
+}
+
 export interface MongodbProductMetadata {
   sku: string;
   store_id: ObjectId;
+  name?: string;
+  brand?: string;
+  ean?: string;
 }
 
 export interface MongodbProductPrice {
@@ -67,16 +88,4 @@ export interface MongodbProductPrice {
   end: number;
 }
 
-export interface StoreConfig {
-  name: string;
-}
-
-export type StorePrices = Map<string, SkuPrices>;
-export type StoreMap = Map<string, StorePrices>;
-
-export interface SkuPrices {
-  prices: Price[];
-  salePrices: Price[];
-  lastPrice?: Price;
-  lastSalePrice?: Price;
-}
+//END db types

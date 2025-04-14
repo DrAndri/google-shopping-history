@@ -16,7 +16,6 @@ import getMongoDb from '../utils/mongodb';
 import { InferGetServerSidePropsType } from 'next/types';
 import dayjs, { Dayjs } from 'dayjs';
 import callApi from '../utils/api';
-import { ObjectId } from 'mongodb';
 
 const { Header, Content } = Layout;
 const { RangePicker } = DatePicker;
@@ -25,7 +24,7 @@ const PriceChart = dynamic(() => import('../components/PriceChart/PriceChart'));
 export async function getServerSideProps() {
   const stores = await getMongoDb()
     .collection<StoreConfig>('stores')
-    .find({}, { projection: { _id: 0, name: 1 } })
+    .find({ apiEnabled: true }, { projection: { _id: 1, name: 1 } })
     .toArray();
   return {
     props: {
@@ -43,8 +42,8 @@ export default function Home({
   const [selectedRange, setSelectedRange] = useState<
     [start: Dayjs | null, end: Dayjs | null] | null
   >(null);
-  const [selectedStores, setSelectedStores] = useState<ObjectId[]>(
-    stores.map((store) => store._id)
+  const [selectedStores, setSelectedStores] = useState<string[]>(
+    stores.map((store) => store._id.toString())
   );
 
   useEffect(() => {
@@ -70,7 +69,11 @@ export default function Home({
       const prices: RechartFormat[] = [];
       res.stores?.forEach((store) => {
         store.skus.forEach((sku) => {
-          const key = store.name + ' - ' + sku.sku + ' - price';
+          const storeName = stores.find(
+            (cachedStore) => cachedStore._id.toString() === store.id
+          )?.name;
+          if (!storeName) return;
+          const key = storeName + ' - ' + sku.sku + ' - price';
           for (const price of sku.prices) {
             const startDay = dayjs.unix(price.start).startOf('day');
             addToArray(
@@ -93,7 +96,7 @@ export default function Home({
               nextDay = nextDay.add(1, 'day');
             }
           }
-          const saleKey = store.name + ' - ' + sku.sku + ' - salePrice';
+          const saleKey = storeName + ' - ' + sku.sku + ' - salePrice';
           if (sku.salePrices) {
             for (const price of sku.salePrices) {
               const startDay = dayjs.unix(price.start).startOf('day');
@@ -142,7 +145,7 @@ export default function Home({
         setLoadingPrices(false);
       })
       .catch((error) => console.log(error));
-  }, [selectedSkus, selectedStores, selectedRange]);
+  }, [selectedSkus, selectedStores, selectedRange, stores]);
 
   async function searchForSkusBeginningWith(
     term: string
