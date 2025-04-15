@@ -10,7 +10,7 @@ import {
   PricesApiRequestBody,
   AutocompleteApiRequestBody
 } from '../types';
-import { DatePicker, Flex, Layout, Select } from 'antd';
+import { DatePicker, Flex, Layout, Select, Tooltip } from 'antd';
 import SkuSelector from '../components/SkuSelector/SkuSelector';
 import getMongoDb from '../utils/mongodb';
 import { InferGetServerSidePropsType } from 'next/types';
@@ -200,10 +200,19 @@ export default function Home({
             />
             <Select
               mode="multiple"
+              maxTagCount="responsive"
               allowClear
               style={{ width: 200 }}
               placeholder="Veldu búð"
               defaultValue={selectedStores}
+              maxTagPlaceholder={(omittedValues) => (
+                <Tooltip
+                  styles={{ root: { pointerEvents: 'none' } }}
+                  title={omittedValues.map(({ label }) => label).join(', ')}
+                >
+                  <span>+ {omittedValues.length} ...</span>
+                </Tooltip>
+              )}
               onChange={(newValue) => {
                 setSelectedStores(newValue);
               }}
