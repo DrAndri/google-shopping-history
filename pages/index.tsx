@@ -10,7 +10,7 @@ import {
   PricesApiRequestBody,
   AutocompleteApiRequestBody
 } from '../types';
-import { DatePicker, Flex, Layout, Select } from 'antd';
+import { DatePicker, Flex, Layout, Select, Tooltip } from 'antd';
 import SkuSelector from '../components/SkuSelector/SkuSelector';
 import getMongoDb from '../utils/mongodb';
 import { InferGetServerSidePropsType } from 'next/types';
@@ -24,7 +24,7 @@ const PriceChart = dynamic(() => import('../components/PriceChart/PriceChart'));
 export async function getServerSideProps() {
   const stores = await getMongoDb()
     .collection<StoreConfig>('stores')
-    .find({}, { projection: { _id: 0, name: 1 } })
+    .find({ apiEnabled: true }, { projection: { _id: 1, name: 1 } })
     .toArray();
   return {
     props: {
@@ -43,7 +43,7 @@ export default function Home({
     [start: Dayjs | null, end: Dayjs | null] | null
   >(null);
   const [selectedStores, setSelectedStores] = useState<string[]>(
-    stores.map((store) => store.name)
+    stores.map((store) => store._id.toString())
   );
 
   useEffect(() => {
@@ -69,7 +69,11 @@ export default function Home({
       const prices: RechartFormat[] = [];
       res.stores?.forEach((store) => {
         store.skus.forEach((sku) => {
-          const key = store.name + ' - ' + sku.sku + ' - price';
+          const storeName = stores.find(
+            (cachedStore) => cachedStore._id.toString() === store.id
+          )?.name;
+          if (!storeName) return;
+          const key = storeName + ' - ' + sku.sku + ' - price';
           for (const price of sku.prices) {
             const startDay = dayjs.unix(price.start).startOf('day');
             addToArray(
@@ -92,7 +96,7 @@ export default function Home({
               nextDay = nextDay.add(1, 'day');
             }
           }
-          const saleKey = store.name + ' - ' + sku.sku + ' - salePrice';
+          const saleKey = storeName + ' - ' + sku.sku + ' - salePrice';
           if (sku.salePrices) {
             for (const price of sku.salePrices) {
               const startDay = dayjs.unix(price.start).startOf('day');
@@ -141,7 +145,7 @@ export default function Home({
         setLoadingPrices(false);
       })
       .catch((error) => console.log(error));
-  }, [selectedSkus, selectedStores, selectedRange]);
+  }, [selectedSkus, selectedStores, selectedRange, stores]);
 
   async function searchForSkusBeginningWith(
     term: string
@@ -196,15 +200,24 @@ export default function Home({
             />
             <Select
               mode="multiple"
+              maxTagCount="responsive"
               allowClear
               style={{ width: 200 }}
               placeholder="Veldu búð"
               defaultValue={selectedStores}
+              maxTagPlaceholder={(omittedValues) => (
+                <Tooltip
+                  styles={{ root: { pointerEvents: 'none' } }}
+                  title={omittedValues.map(({ label }) => label).join(', ')}
+                >
+                  <span>+ {omittedValues.length} ...</span>
+                </Tooltip>
+              )}
               onChange={(newValue) => {
                 setSelectedStores(newValue);
               }}
               options={stores.map((store) => {
-                return { label: store.name, value: store.name };
+                return { label: store.name, value: store._id };
               })}
               loading={loadingPrices}
             />

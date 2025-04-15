@@ -1,4 +1,4 @@
-import { Document } from 'mongodb';
+import { ObjectId } from 'mongodb';
 
 export interface AutocompleteApiRequest extends NextApiRequest {
   body: AutocompleteApiRequestBody;
@@ -24,7 +24,7 @@ export interface PricesResponse {
 }
 
 export interface StorePricesResponse {
-  name: string;
+  id: string;
   skus: SkuPricesResponse[];
 }
 
@@ -55,24 +55,6 @@ export interface SelectValue {
   value: string;
 }
 
-export interface MongodbProductMetadata extends Document {
-  sku: string;
-  store: string;
-}
-
-export interface MongodbProductPrice extends Document {
-  sku: string;
-  store: string;
-  salePrice: boolean;
-  price: number;
-  start: number;
-  end: number;
-}
-
-export interface StoreConfig {
-  name: string;
-}
-
 export type StorePrices = Map<string, SkuPrices>;
 export type StoreMap = Map<string, StorePrices>;
 
@@ -82,3 +64,28 @@ export interface SkuPrices {
   lastPrice?: Price;
   lastSalePrice?: Price;
 }
+
+//START db types
+export interface StoreConfig {
+  name: string;
+  apiEnabled: boolean;
+}
+
+export interface MongodbProductMetadata {
+  sku: string;
+  store_id: ObjectId;
+  name?: string;
+  brand?: string;
+  ean?: string;
+}
+
+export interface MongodbProductPrice {
+  sku: string;
+  store_id: ObjectId;
+  salePrice: boolean;
+  price: number;
+  start: number;
+  end: number;
+}
+
+//END db types

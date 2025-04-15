@@ -9,7 +9,7 @@ import {
   PricesApiRequest
 } from '../../types';
 import getMongoDb from '../../utils/mongodb';
-import { Filter } from 'mongodb';
+import { Filter, ObjectId } from 'mongodb';
 
 export default function handler(
   req: PricesApiRequest,
@@ -19,15 +19,14 @@ export default function handler(
 
   const getPriceChanges = async (
     skus: string[],
-    stores: string[],
+    storeIds: string[],
     startDate: number | undefined,
     endDate: number | undefined
   ): Promise<PricesResponse> => {
     const storeMap: StoreMap = new Map<string, Map<string, SkuPrices>>();
-
     const filter: Filter<MongodbProductPrice> = {
       sku: { $in: skus },
-      store: { $in: stores }
+      store_id: { $in: storeIds.map((store_id) => new ObjectId(store_id)) }
     };
     if (startDate !== undefined) {
       filter.end = {
@@ -46,7 +45,7 @@ export default function handler(
         _id: 0,
         sku: 1,
         price: 1,
-        store: 1,
+        store_id: 1,
         salePrice: 1,
         start: 1,
         end: 1
@@ -57,8 +56,13 @@ export default function handler(
       .collection<MongodbProductPrice>('priceChanges')
       .find(filter, options)
       .sort({ start: 1 });
+
     for await (const doc of priceChanges) {
-      const skuPrices = getSkuPricesFromMap(doc.store, doc.sku, storeMap);
+      const skuPrices = getSkuPricesFromMap(
+        doc.store_id.toString(),
+        doc.sku,
+        storeMap
+      );
       const entry = {
         start: doc.start,
         end: doc.end,
@@ -77,7 +81,7 @@ export default function handler(
     if (storeMap.size > 0) response.stores = [];
     for (const entry of storeMap.entries()) {
       response.stores?.push({
-        name: entry[0],
+        id: entry[0],
         skus: getSkuResponse(entry[1])
       });
     }
@@ -100,15 +104,15 @@ export default function handler(
   };
 
   const getSkuPricesFromMap = (
-    store: string,
+    store_id: string,
     sku: string,
     storeMap: StoreMap
   ): SkuPrices => {
-    let storePrices = storeMap.get(store);
+    let storePrices = storeMap.get(store_id);
     if (storePrices === undefined) {
       storePrices = new Map<string, SkuPrices>();
-      storeMap.set(store, storePrices);
-      storePrices = storeMap.get(store);
+      storeMap.set(store_id, storePrices);
+      storePrices = storeMap.get(store_id);
     }
 
     let skuPrices = storePrices!.get(sku);
@@ -124,7 +128,8 @@ export default function handler(
     }
     return skuPrices!;
   };
-  const skus: string[] = req.body.skus;
+  //TODO: config for max products?
+  const skus: string[] = req.body.skus.splice(0, 20);
   const stores: string[] = req.body.stores;
   const start: number | undefined = req.body.start;
   const end: number | undefined = req.body.end;
