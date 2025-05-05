@@ -1,7 +1,6 @@
 import React from 'react';
 import { createCache, extractStyle, StyleProvider } from '@ant-design/cssinjs';
 import Document, { Head, Html, Main, NextScript } from 'next/document';
-import { GoogleAnalytics } from '@next/third-parties/google';
 import type { DocumentContext } from 'next/document';
 
 const MyDocument = () => (
@@ -11,7 +10,6 @@ const MyDocument = () => (
       <Main />
       <NextScript />
     </body>
-    <GoogleAnalytics gaId="G-DNB7LS6RGC" />
   </Html>
 );
 
