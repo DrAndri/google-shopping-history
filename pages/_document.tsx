@@ -4,8 +4,6 @@ import Document, { Head, Html, Main, NextScript } from 'next/document';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import type { DocumentContext } from 'next/document';
 
-const GOOGLE_TAG = process.env.NEXT_PUBLIC_GOOGLE_TAG;
-
 const MyDocument = () => (
   <Html lang="is">
     <Head />
@@ -13,7 +11,7 @@ const MyDocument = () => (
       <Main />
       <NextScript />
     </body>
-    {GOOGLE_TAG && <GoogleAnalytics gaId={GOOGLE_TAG} />}
+    <GoogleAnalytics gaId="G-DNB7LS6RGC" />
   </Html>
 );
 
