@@ -16,6 +16,7 @@ import getMongoDb from '../utils/mongodb';
 import { InferGetServerSidePropsType } from 'next/types';
 import dayjs, { Dayjs } from 'dayjs';
 import callApi from '../utils/api';
+import { sendGAEvent } from '@next/third-parties/google';
 
 const { Header, Content } = Layout;
 const { RangePicker } = DatePicker;
@@ -137,7 +138,12 @@ export default function Home({
     }
 
     setLoadingPrices(true);
-
+    sendGAEvent('event', 'prices', {
+      skus: body.skus,
+      stores: body.stores,
+      start: body.start,
+      end: body.end
+    });
     callApi('prices', body)
       .then((res) => res.json())
       .then((res: PricesResponse) => {
@@ -150,6 +156,7 @@ export default function Home({
   async function searchForSkusBeginningWith(
     term: string
   ): Promise<SelectValue[]> {
+    sendGAEvent('event', 'autocomplete', { term: term, stores: selectedStores });
     const body: AutocompleteApiRequestBody = {
       term: term,
       stores: selectedStores
