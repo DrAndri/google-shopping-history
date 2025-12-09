@@ -1,5 +1,5 @@
 {
-  "name": "google-shopping-history",
+  "name": "webstore-api",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -19,6 +19,7 @@
     "next": "^16.0.8",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-is": "^19.2.1",
     "recharts": "^3.5.1"
   },
   "devDependencies": {
