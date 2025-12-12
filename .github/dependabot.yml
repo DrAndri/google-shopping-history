@@ -7,12 +7,14 @@ version: 2
 updates:
   - package-ecosystem: "npm" # See documentation for possible values
     directory: "/" # Location of package manifests
+    open-pull-requests-limit: 50
     schedule:
       interval: "daily"
 
   - package-ecosystem: "docker"
     # Look for a `Dockerfile` in the `root` directory
     directory: "/"
+    open-pull-requests-limit: 50
     # Check for updates once a week
     schedule:
       interval: "daily"
