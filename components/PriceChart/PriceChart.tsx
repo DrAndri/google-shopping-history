@@ -124,7 +124,9 @@ export default function PriceChart({ prices }: PriceChartProps) {
           <Tooltip
             labelFormatter={(t: number) => dayjs.unix(t).format('DD-MMM-YYYY')}
             labelStyle={{ fontWeight: 'bold' }}
-            formatter={(value: number) => formatPrice(value) + ' kr.'}
+            formatter={(value: number | undefined) =>
+              value && formatPrice(value) + ' kr.'
+            }
           />
           <CartesianGrid stroke="#c2c2c2" strokeDasharray="3 3" />
           <Legend
